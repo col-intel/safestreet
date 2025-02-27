@@ -1,5 +1,7 @@
+const { fontFamily } = require("tailwindcss/defaultTheme")
+
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   darkMode: ['class'],
   content: [
     './pages/**/*.{ts,tsx}',
@@ -8,6 +10,13 @@ export default {
     './src/**/*.{ts,tsx}',
   ],
   theme: {
+    container: {
+      center: true,
+      padding: "2rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
     extend: {
       borderRadius: {
         lg: 'var(--radius)',
@@ -56,6 +65,9 @@ export default {
           5: 'hsl(var(--chart-5))',
         },
       },
+      fontFamily: {
+        sans: fontFamily.sans,
+      },
       keyframes: {
         'accordion-down': {
           from: {
@@ -80,5 +92,8 @@ export default {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [
+    require('tailwindcss-animate'),
+    require('@tailwindcss/typography'),
+  ],
 };

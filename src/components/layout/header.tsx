@@ -6,34 +6,35 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { ModeToggle } from "@/components/mode-toggle"
+import { Link } from "react-router-dom"
 
 export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto max-w-4xl flex h-14 items-center px-4">
         <div className="mr-4 flex">
-          <a href="/" className="mr-6 flex items-center space-x-2">
+          <Link to="/" className="mr-6 flex items-center space-x-2">
             <span className="font-bold">SafeStreet</span>
-          </a>
+          </Link>
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-            <a
-              href="/about"
+            <Link
+              to="/about"
               className="transition-colors hover:text-foreground/80 text-foreground/60"
             >
               Sobre
-            </a>
-            <a
-              href="/faq"
+            </Link>
+            <Link
+              to="/faq"
               className="transition-colors hover:text-foreground/80 text-foreground/60"
             >
               FAQ
-            </a>
-            <a
-              href="/contact"
+            </Link>
+            <Link
+              to="/contact"
               className="transition-colors hover:text-foreground/80 text-foreground/60"
             >
               Contacto
-            </a>
+            </Link>
             <a
               href="https://instagram.com/safestreetporto"
               target="_blank"
@@ -62,24 +63,24 @@ export function Header() {
               </SheetTrigger>
               <SheetContent side="right">
                 <nav className="flex flex-col space-y-4">
-                  <a
-                    href="/about"
+                  <Link
+                    to="/about"
                     className="text-sm font-medium transition-colors"
                   >
                     Sobre
-                  </a>
-                  <a
-                    href="/faq"
+                  </Link>
+                  <Link
+                    to="/faq"
                     className="text-sm font-medium transition-colors"
                   >
                     FAQ
-                  </a>
-                  <a
-                    href="/contact"
+                  </Link>
+                  <Link
+                    to="/contact"
                     className="text-sm font-medium transition-colors"
                   >
                     Contacto
-                  </a>
+                  </Link>
                   <a
                     href="https://instagram.com/safestreetporto"
                     target="_blank"
