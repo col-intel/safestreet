@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Incident, Severity, severityLabels } from "@/types"
+import { Link } from "react-router-dom"
 
 const severityColors: Record<Severity, string> = {
   low: "bg-green-500/10 text-green-700 dark:text-green-400",
@@ -43,9 +44,9 @@ export function IncidentList({ incidents }: IncidentListProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.location.href = `/incident/${incident.id}`}
+                  asChild
                 >
-                  Ver Mais
+                  <Link to={`/incident/${incident.id}`}>Ver Detalhes</Link>
                 </Button>
               </div>
             </div>

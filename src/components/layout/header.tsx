@@ -18,6 +18,12 @@ export function Header() {
           </Link>
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <Link
+              to="/submit"
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
+            >
+              Reportar
+            </Link>
+            <Link
               to="/about"
               className="transition-colors hover:text-foreground/80 text-foreground/60"
             >
@@ -34,6 +40,12 @@ export function Header() {
               className="transition-colors hover:text-foreground/80 text-foreground/60"
             >
               Contacto
+            </Link>
+            <Link
+              to="/admin"
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
+            >
+              Admin
             </Link>
             <a
               href="https://instagram.com/safestreetporto"
@@ -64,6 +76,12 @@ export function Header() {
               <SheetContent side="right">
                 <nav className="flex flex-col space-y-4">
                   <Link
+                    to="/submit"
+                    className="text-sm font-medium transition-colors"
+                  >
+                    Reportar
+                  </Link>
+                  <Link
                     to="/about"
                     className="text-sm font-medium transition-colors"
                   >
@@ -80,6 +98,12 @@ export function Header() {
                     className="text-sm font-medium transition-colors"
                   >
                     Contacto
+                  </Link>
+                  <Link
+                    to="/admin"
+                    className="text-sm font-medium transition-colors"
+                  >
+                    Admin
                   </Link>
                   <a
                     href="https://instagram.com/safestreetporto"

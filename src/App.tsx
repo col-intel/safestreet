@@ -6,63 +6,17 @@ import { IncidentList } from "@/components/incident-list"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { InfoIcon } from "lucide-react"
-import { Incident, Freguesia } from "@/types"
+import { InfoIcon, Loader2 } from "lucide-react"
+import { Incident, Freguesia, Severity, severityLabels } from "@/types"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { SubmitIncidentPage } from "@/pages/SubmitIncident"
+import { AdminPage } from "@/pages/AdminPage"
+import { useState, useEffect } from "react"
+import { getApprovedIncidents } from "@/lib/api"
+import { Link, useParams } from "react-router-dom"
 
-// Sample data - replace with actual data from your backend
-const sampleIncidents: Incident[] = [
-  {
-    id: "1",
-    date: "2025-03-20",
-    time: "14:30",
-    location: "Rua de Santa Catarina",
-    freguesia: "Santo Ildefonso",
-    description: "Atividade suspeita perto da entrada do metro",
-    type: "Atividade Suspeita",
-    severity: "medium",
-    reporterName: "João",
-    status: "approved",
-  },
-  {
-    id: "2",
-    date: "2025-03-20",
-    time: "16:45",
-    location: "Rua das Flores",
-    freguesia: "Sé",
-    description: "Tentativa de furto reportada próximo à área turística",
-    type: "Furto",
-    severity: "high",
-    reporterName: "Maria",
-    status: "approved",
-  },
-  {
-    id: "3",
-    date: "2025-03-19",
-    time: "09:15",
-    location: "Avenida dos Aliados",
-    freguesia: "Santo Ildefonso",
-    description: "Vandalismo em mobiliário urbano",
-    type: "Vandalismo",
-    severity: "medium",
-    reporterName: "Ana",
-    status: "approved",
-  },
-  {
-    id: "4",
-    date: "2025-03-19",
-    time: "22:30",
-    location: "Jardim do Passeio Alegre",
-    freguesia: "Foz do Douro",
-    description: "Grupo suspeito reunido no jardim após o horário de fecho",
-    type: "Atividade Suspeita",
-    severity: "low",
-    reporterName: "Pedro",
-    status: "approved",
-  },
-]
-
+// Sample data for freguesias
 const freguesias: Freguesia[] = [
   "Bonfim",
   "Campanhã",
@@ -77,12 +31,53 @@ const freguesias: Freguesia[] = [
   "Vitória",
 ]
 
+// Severity colors for badges
+const severityColors: Record<Severity, string> = {
+  low: "bg-green-500/10 text-green-700 dark:text-green-400",
+  medium: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
+  high: "bg-red-500/10 text-red-700 dark:text-red-400",
+}
+
 // Mock data for last report
 const lastReportDate = new Date(2024, 2, 24) // March 24, 2024
 const daysSinceLastReport = 3 // Fixed value instead of calculating
 const lastReportIncidents = 23
 
 function HomePage() {
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedFreguesia, setSelectedFreguesia] = useState<string>("all");
+  const [selectedSeverity, setSelectedSeverity] = useState<string>("all");
+
+  useEffect(() => {
+    const fetchIncidents = async () => {
+      setLoading(true);
+      try {
+        const data = await getApprovedIncidents();
+        setIncidents(data);
+      } catch (err) {
+        setError('Falha ao carregar incidentes. Por favor, tente novamente mais tarde.');
+        console.error('Error fetching incidents:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchIncidents();
+  }, []);
+
+  // Filter incidents based on selected filters
+  const filteredIncidents = incidents.filter(incident => {
+    if (selectedFreguesia && selectedFreguesia !== "all" && incident.freguesia !== selectedFreguesia) {
+      return false;
+    }
+    if (selectedSeverity && selectedSeverity !== "all" && incident.severity !== selectedSeverity) {
+      return false;
+    }
+    return true;
+  });
+
   return (
     <>
       <div className="flex flex-col items-center text-center gap-2 mb-8">
@@ -98,83 +93,156 @@ function HomePage() {
         <InfoIcon className="h-4 w-4" />
         <AlertDescription>
           Relatórios semanais são enviados à PSP, Câmara do Porto e Juntas de Freguesia. 
-          Último relatório enviado há {daysSinceLastReport} dias, incluindo {lastReportIncidents} incidentes.
+          Último relatório: {lastReportDate.toLocaleDateString('pt-PT')} ({daysSinceLastReport} dias atrás) com {lastReportIncidents} incidentes.
         </AlertDescription>
       </Alert>
 
-      <div className="flex flex-col sm:flex-row items-center gap-4 mb-8">
-        <Select>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filtrar por Freguesia" />
-          </SelectTrigger>
-          <SelectContent>
-            {freguesias.map((freguesia) => (
-              <SelectItem key={freguesia} value={freguesia}>
-                {freguesia}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-wrap gap-2">
+            <Select onValueChange={setSelectedFreguesia}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Freguesia" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {freguesias.map((freguesia) => (
+                  <SelectItem key={freguesia} value={freguesia}>{freguesia}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="w-full sm:w-[180px]">
-              <span>Filtrar por Gravidade</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[180px]">
-            <DropdownMenuItem className="gap-2">
-              <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400">
-                Baixo
-              </Badge>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2">
-              <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
-                Médio
-              </Badge>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2">
-              <Badge variant="outline" className="bg-red-500/10 text-red-700 dark:text-red-400">
-                Alto
-              </Badge>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <Button 
-          className="w-full sm:w-auto bg-[#25D366] hover:bg-[#20BD5A]"
-        >
-          Reportar Incidente por WhatsApp
-        </Button>
-      </div>
-
-      <div className="space-y-8">
-        {Object.entries(
-          sampleIncidents.reduce((acc, incident) => {
-            const date = incident.date;
-            if (!acc[date]) acc[date] = [];
-            acc[date].push(incident);
-            return acc;
-          }, {} as Record<string, Incident[]>)
-        ).map(([date, incidents]) => (
-          <div key={date}>
-            <div className="flex items-center gap-4 mb-4">
-              <div className="h-px flex-1 bg-border" />
-              <time className="text-sm font-medium text-muted-foreground">
-                {new Date(date).toLocaleDateString('pt-PT', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
-                })}
-              </time>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-            <IncidentList incidents={incidents} />
+            <Select onValueChange={setSelectedSeverity}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Severidade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="low">Baixa</SelectItem>
+                <SelectItem value="medium">Média</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        ))}
+
+          <Button asChild>
+            <Link to="/submit">Reportar Incidente</Link>
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span>A carregar incidentes...</span>
+            </div>
+          </div>
+        ) : error ? (
+          <Alert variant="destructive" className="my-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : filteredIncidents.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">
+            Nenhum incidente encontrado com os filtros selecionados.
+          </div>
+        ) : (
+          <IncidentList incidents={filteredIncidents} />
+        )}
       </div>
     </>
   )
+}
+
+// Incident Details Page Component
+function IncidentDetailsPage() {
+  const { id } = useParams();
+  const [incident, setIncident] = useState<Incident | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchIncident = async () => {
+      setLoading(true);
+      try {
+        const data = await getApprovedIncidents();
+        const foundIncident = data.find(inc => inc.id === id);
+        if (foundIncident) {
+          setIncident(foundIncident);
+        } else {
+          setError('Incidente não encontrado');
+        }
+      } catch (err) {
+        setError('Falha ao carregar o incidente. Por favor, tente novamente mais tarde.');
+        console.error('Error fetching incident:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchIncident();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-10">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>A carregar incidente...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !incident) {
+    return (
+      <div className="space-y-4">
+        <Alert variant="destructive">
+          <AlertDescription>{error || 'Incidente não encontrado'}</AlertDescription>
+        </Alert>
+        <Button asChild>
+          <Link to="/">Voltar para a página inicial</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{incident.location}</h1>
+        <Badge variant="outline" className={severityColors[incident.severity]}>
+          {severityLabels[incident.severity]}
+        </Badge>
+      </div>
+      
+      <div className="grid gap-4">
+        <div>
+          <h2 className="text-lg font-semibold mb-2">Detalhes do Incidente</h2>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="text-muted-foreground">Data:</div>
+            <div>{new Date(incident.date).toLocaleDateString('pt-PT')}</div>
+            <div className="text-muted-foreground">Hora:</div>
+            <div>{incident.time}</div>
+            <div className="text-muted-foreground">Freguesia:</div>
+            <div>{incident.freguesia}</div>
+            <div className="text-muted-foreground">Tipo:</div>
+            <div>{incident.type}</div>
+            <div className="text-muted-foreground">Reportado por:</div>
+            <div>{incident.reporterName}</div>
+          </div>
+        </div>
+        
+        <div>
+          <h2 className="text-lg font-semibold mb-2">Descrição</h2>
+          <p className="text-sm">{incident.description}</p>
+        </div>
+        
+        <Button asChild>
+          <Link to="/">Voltar para a página inicial</Link>
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 function App() {
@@ -188,6 +256,9 @@ function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/submit" element={<SubmitIncidentPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/incident/:id" element={<IncidentDetailsPage />} />
           </Routes>
         </main>
         <Footer />
