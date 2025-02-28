@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { InfoIcon, Loader2 } from 'lucide-react';
+import { InfoIcon, Loader2, MapPin, Shield, AlertTriangle } from 'lucide-react';
 import { Incident, Freguesia, Severity, severityLabels } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { IncidentList } from '@/components/incident-list';
 import { getApprovedIncidents } from '@/lib/api';
+import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
 
 // Sample data for freguesias
 const freguesias: Freguesia[] = [
@@ -74,80 +76,114 @@ export default function HomePage() {
 
   return (
     <>
-      <div className="flex flex-col items-center text-center gap-2 mb-8">
-        <h1 className="text-3xl font-bold leading-tight tracking-tighter md:text-4xl lg:text-5xl">
-          Mantendo as Ruas do Porto Seguras
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-[700px]">
-          Acompanhe e reporte incidentes de segurança no Porto. Juntos podemos tornar a nossa cidade mais segura.
-        </p>
-        <div className="mt-6">
-          <Button asChild size="lg">
-            <a href="/reportar">Reportar Novo Incidente</a>
-          </Button>
-        </div>
-      </div>
-
-      <Alert className="mb-8">
-        <InfoIcon className="h-4 w-4" />
-        <AlertDescription>
-          Relatórios semanais são enviados à PSP, Câmara do Porto e Juntas de Freguesia. 
-          Último relatório: {lastReportDate.toLocaleDateString('pt-PT')} ({daysSinceLastReport} dias atrás) com {lastReportIncidents} incidentes.
-        </AlertDescription>
-      </Alert>
-
-      <div className="flex flex-col md:flex-row gap-4 mb-6 items-start md:items-center">
-        <div className="flex-1">
-          <h2 className="text-2xl font-bold mb-2">Incidentes Recentes</h2>
-          <p className="text-muted-foreground">
-            Visualize os incidentes reportados pelos cidadãos e aprovados pela nossa equipe.
+      <section className="py-12 md:py-16 text-center">
+        <div className="container mx-auto max-w-3xl px-4">
+          <div className="flex items-center justify-center mb-6">
+            <Shield className="h-12 w-12 text-primary" />
+          </div>
+          <h1 className="text-4xl font-bold leading-tight tracking-tighter md:text-5xl lg:text-6xl mb-4">
+            Mantendo as Ruas do Porto Seguras
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-[700px] mx-auto mb-8">
+            Acompanhe e reporte incidentes de segurança no Porto. Juntos podemos tornar a nossa cidade mais segura.
           </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button asChild size="lg" className="w-full sm:w-auto">
+              <a href="/reportar" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Reportar Novo Incidente
+              </a>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto border-dashed">
+              <a href="/faq">Saiba Mais</a>
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Select value={selectedFreguesia} onValueChange={setSelectedFreguesia}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Freguesia" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as Freguesias</SelectItem>
-              {freguesias.map((freguesia) => (
-                <SelectItem key={freguesia} value={freguesia}>
-                  {freguesia}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={selectedSeverity} onValueChange={setSelectedSeverity}>
-            <SelectTrigger className="w-[220px]">
-              <SelectValue placeholder="Severidade" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as Severidades</SelectItem>
-              {Object.entries(severityLabels).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      </section>
 
-      {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <Separator className="my-2 border-dashed" />
+
+      <section className="py-8">
+        <div className="container mx-auto">
+          <Card className="border-primary/20 bg-primary/5 border-dashed">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <InfoIcon className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <h3 className="font-medium mb-1">Relatórios Semanais</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Relatórios são enviados à PSP, Câmara do Porto e Juntas de Freguesia. 
+                    Último relatório: {lastReportDate.toLocaleDateString('pt-PT')} ({daysSinceLastReport} dias atrás) com {lastReportIncidents} incidentes.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      ) : error ? (
-        <Alert variant="destructive" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      ) : filteredIncidents.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Nenhum incidente encontrado com os filtros selecionados.</p>
+      </section>
+
+      <section className="py-8">
+        <div className="container mx-auto">
+          <div className="flex flex-col md:flex-row gap-6 mb-8 items-start md:items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold mb-2">Incidentes Recentes</h2>
+              <p className="text-muted-foreground">
+                Visualize os incidentes reportados pelos cidadãos e aprovados pela nossa equipe.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <Select value={selectedFreguesia} onValueChange={setSelectedFreguesia}>
+                <SelectTrigger className="w-full sm:w-[180px] border-dashed">
+                  <SelectValue placeholder="Freguesia" />
+                </SelectTrigger>
+                <SelectContent className="border-dashed">
+                  <SelectItem value="all">Todas as Freguesias</SelectItem>
+                  {freguesias.map((freguesia) => (
+                    <SelectItem key={freguesia} value={freguesia}>
+                      {freguesia}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedSeverity} onValueChange={setSelectedSeverity}>
+                <SelectTrigger className="w-full sm:w-[220px] border-dashed">
+                  <SelectValue placeholder="Severidade" />
+                </SelectTrigger>
+                <SelectContent className="border-dashed">
+                  <SelectItem value="all">Todas as Severidades</SelectItem>
+                  {Object.entries(severityLabels).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">A carregar incidentes...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <Card className="border-destructive/20 bg-destructive/5 p-6 border-dashed">
+              <div className="flex items-start gap-4">
+                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                <AlertDescription>{error}</AlertDescription>
+              </div>
+            </Card>
+          ) : filteredIncidents.length === 0 ? (
+            <Card className="border-muted/20 bg-muted/5 p-8 text-center border-dashed">
+              <p className="text-muted-foreground">Nenhum incidente encontrado com os filtros selecionados.</p>
+            </Card>
+          ) : (
+            <IncidentList incidents={filteredIncidents} />
+          )}
         </div>
-      ) : (
-        <IncidentList incidents={filteredIncidents} />
-      )}
+      </section>
     </>
   );
 } 
