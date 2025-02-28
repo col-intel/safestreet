@@ -47,12 +47,5 @@
   "github": {
     "silent": true
   },
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "outputDirectory": ".next",
-  "postbuild": {
-    "commands": [
-      "npx prisma migrate deploy"
-    ]
-  }
+  "buildCommand": "npm run vercel-build"
 } 

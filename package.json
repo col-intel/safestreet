@@ -5,12 +5,14 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "vercel-build": "node scripts/vercel-build.js",
     "start": "next start",
     "lint": "next lint",
     "seed": "npx ts-node prisma/seed.ts",
     "postinstall": "prisma generate",
     "migrate:deploy": "prisma migrate deploy",
-    "migrate": "node scripts/migrate.js"
+    "migrate": "node scripts/migrate.js",
+    "deploy:db": "node scripts/deploy-db.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
