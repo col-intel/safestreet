@@ -1,25 +1,31 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "headers": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
+      "src": "server.js",
+      "use": "@vercel/node"
     },
     {
-      "source": "/(.*).(js|css|svg|jpg|jpeg|png|gif|ico|json)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/(.*\\.(js|css|svg|jpg|jpeg|png|gif|ico|json))",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" },
+      "dest": "/dist/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/dist/index.html"
     }
   ]
 } 

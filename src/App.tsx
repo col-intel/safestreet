@@ -15,6 +15,11 @@ import { AdminPage } from "@/pages/AdminPage"
 import { useState, useEffect } from "react"
 import { getApprovedIncidents } from "@/lib/api"
 import { Link, useParams } from "react-router-dom"
+import { AuthProvider } from "@/lib/auth.tsx"
+import { LoginPage } from "@/pages/LoginPage"
+import { UnauthorizedPage } from "@/pages/UnauthorizedPage"
+import { HelmetProvider } from "react-helmet-async"
+import { AssociacoesPage } from "@/pages/AssociacoesPage"
 
 // Sample data for freguesias
 const freguesias: Freguesia[] = [
@@ -126,7 +131,7 @@ function HomePage() {
           </div>
 
           <Button asChild>
-            <Link to="/submit">Reportar Incidente</Link>
+            <Link to="/reportar">Reportar Incidente</Link>
           </Button>
         </div>
 
@@ -247,23 +252,32 @@ function IncidentDetailsPage() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="rua-segura-theme">
-      <div className="min-h-screen flex flex-col relative">
-        <Header />
-        <main className="flex-1 container mx-auto max-w-4xl px-4 py-16 md:py-20">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/faq" element={<FAQPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/submit" element={<SubmitIncidentPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-            <Route path="/incident/:id" element={<IncidentDetailsPage />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
-    </ThemeProvider>
+    <HelmetProvider>
+      <AuthProvider>
+        <ThemeProvider defaultTheme="system" storageKey="rua-segura-theme">
+          <div className="min-h-screen flex flex-col relative">
+            <Header />
+            <main className="flex-1 container mx-auto max-w-4xl px-4 py-16 md:py-20">
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/sobre" element={<AboutPage />} />
+                <Route path="/faq" element={<FAQPage />} />
+                <Route path="/contacto" element={<ContactPage />} />
+                <Route path="/reportar" element={<SubmitIncidentPage />} />
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/incidente/:id" element={<IncidentDetailsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/unauthorized" element={<UnauthorizedPage />} />
+                <Route path="/associacoes" element={<AssociacoesPage />} />
+              </Routes>
+            </main>
+            <Footer />
+          </div>
+        </ThemeProvider>
+      </AuthProvider>
+    </HelmetProvider>
   )
 }
 
@@ -302,7 +316,7 @@ function AboutPage() {
       
       <h2>Contacte-nos</h2>
       <p>
-        Se tiver dúvidas, sugestões ou quiser juntar-se à nossa iniciativa, não hesite em <a href="/contact">contactar-nos</a>.
+        Se tiver dúvidas, sugestões ou quiser juntar-se à nossa iniciativa, não hesite em <a href="/contacto">contactar-nos</a>.
       </p>
     </div>
   )
@@ -353,7 +367,7 @@ function FAQPage() {
       
       <h2>Como posso ajudar além de reportar incidentes?</h2>
       <p>
-        Pode ajudar divulgando a plataforma Rua Segura entre amigos, familiares e vizinhos. Também pode <a href="/contact">contactar-nos</a>
+        Pode ajudar divulgando a plataforma Rua Segura entre amigos, familiares e vizinhos. Também pode <a href="/contacto">contactar-nos</a>
         se estiver interessado em voluntariar-se ou colaborar connosco de outras formas.
       </p>
     </div>
@@ -372,76 +386,220 @@ function ContactPage() {
       
       <h2>Email</h2>
       <p>
-        <a href="mailto:info@ruasegura.pt">info@ruasegura.pt</a>
+        Para qualquer questão ou sugestão, envie-nos um email para: <a href="mailto:info@ruasegura.pt">info@ruasegura.pt</a>
       </p>
       
-      <h2>Redes Sociais</h2>
-      <p>
-        Siga-nos no Instagram: <a href="https://instagram.com/safestreetporto" target="_blank" rel="noreferrer">@safestreetporto</a>
-      </p>
-      
-      <h2>WhatsApp</h2>
-      <p>
-        Para reportar incidentes ou entrar em contacto connosco via WhatsApp: +351 912 345 678
-      </p>
-      
-      <h2>Formulário de Contacto</h2>
-      <p>
-        Prefere enviar-nos uma mensagem diretamente? Utilize o formulário abaixo e responderemos o mais brevemente possível.
-      </p>
-      
-      <div className="mt-8 space-y-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium">
-              Nome
-            </label>
-            <input
-              type="text"
-              id="name"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-          </div>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-          </div>
-        </div>
-        <div>
-          <label htmlFor="subject" className="block text-sm font-medium">
-            Assunto
-          </label>
-          <input
-            type="text"
-            id="subject"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-          />
-        </div>
-        <div>
-          <label htmlFor="message" className="block text-sm font-medium">
-            Mensagem
-          </label>
-          <textarea
-            id="message"
-            rows={4}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-          ></textarea>
-        </div>
-        <div>
-          <button
-            type="submit"
-            className="inline-flex justify-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-          >
-            Enviar Mensagem
-          </button>
-        </div>
+      <div className="mt-8 p-6 border rounded-lg bg-muted/50">
+        <h3 className="text-xl font-medium mb-2">Horário de Atendimento</h3>
+        <p className="mb-0">
+          Respondemos a todas as mensagens dentro de 24-48 horas úteis.
+        </p>
       </div>
+    </div>
+  )
+}
+
+// Privacy Page Component
+function PrivacyPage() {
+  return (
+    <div className="prose prose-lg dark:prose-invert mx-auto">
+      <h1>Política de Privacidade</h1>
+      <p>
+        Última atualização: 27 de Março de 2024
+      </p>
+      
+      <h2>1. Introdução</h2>
+      <p>
+        A Rua Segura ("nós", "nosso" ou "nossa") está comprometida em proteger a sua privacidade. 
+        Esta Política de Privacidade explica como recolhemos, utilizamos, divulgamos e protegemos as suas informações 
+        quando utiliza o nosso website e serviços (coletivamente, os "Serviços").
+      </p>
+      
+      <h2>2. Informações que Recolhemos</h2>
+      <p>
+        Recolhemos os seguintes tipos de informações:
+      </p>
+      <ul>
+        <li>
+          <strong>Informações Pessoais:</strong> Nome, endereço de e-mail e número de telefone quando fornecidos voluntariamente.
+        </li>
+        <li>
+          <strong>Informações de Incidentes:</strong> Detalhes sobre incidentes de segurança que reporta, incluindo localização, data, hora e descrição.
+        </li>
+        <li>
+          <strong>Informações de Utilização:</strong> Dados sobre como interage com os nossos Serviços, incluindo endereço IP, tipo de navegador, páginas visitadas e tempo de permanência.
+        </li>
+      </ul>
+      
+      <h2>3. Como Utilizamos as Suas Informações</h2>
+      <p>
+        Utilizamos as suas informações para:
+      </p>
+      <ul>
+        <li>Fornecer, manter e melhorar os nossos Serviços</li>
+        <li>Processar e gerir os incidentes reportados</li>
+        <li>Comunicar consigo sobre os nossos Serviços</li>
+        <li>Compilar relatórios anónimos para autoridades locais</li>
+        <li>Cumprir obrigações legais</li>
+      </ul>
+      
+      <h2>4. Partilha de Informações</h2>
+      <p>
+        Podemos partilhar informações com:
+      </p>
+      <ul>
+        <li>
+          <strong>Autoridades Locais:</strong> Partilhamos relatórios de incidentes com a PSP, Câmara Municipal do Porto e Juntas de Freguesia para ajudar a melhorar a segurança pública.
+        </li>
+        <li>
+          <strong>Prestadores de Serviços:</strong> Empresas que nos ajudam a fornecer os nossos Serviços, como serviços de alojamento web e análise.
+        </li>
+        <li>
+          <strong>Cumprimento Legal:</strong> Quando necessário para cumprir a lei, proteger os nossos direitos ou a segurança pública.
+        </li>
+      </ul>
+      
+      <h2>5. Segurança dos Dados</h2>
+      <p>
+        Implementamos medidas de segurança técnicas e organizacionais para proteger as suas informações contra acesso não autorizado, perda ou alteração.
+        No entanto, nenhum método de transmissão pela Internet ou armazenamento eletrónico é 100% seguro.
+      </p>
+      
+      <h2>6. Os Seus Direitos</h2>
+      <p>
+        Dependendo da sua localização, pode ter os seguintes direitos:
+      </p>
+      <ul>
+        <li>Aceder às suas informações pessoais</li>
+        <li>Corrigir informações imprecisas</li>
+        <li>Apagar as suas informações</li>
+        <li>Restringir ou opor-se ao processamento</li>
+        <li>Portabilidade dos dados</li>
+      </ul>
+      <p>
+        Para exercer estes direitos, contacte-nos através de info@ruasegura.pt.
+      </p>
+      
+      <h2>7. Alterações a Esta Política</h2>
+      <p>
+        Podemos atualizar esta Política de Privacidade periodicamente. Notificaremos sobre alterações significativas 
+        publicando a nova política no nosso website.
+      </p>
+      
+      <h2>8. Contacte-nos</h2>
+      <p>
+        Se tiver dúvidas sobre esta Política de Privacidade, contacte-nos através de:
+      </p>
+      <p>
+        Email: info@ruasegura.pt<br />
+        WhatsApp: +351 912 345 678
+      </p>
+    </div>
+  )
+}
+
+// Terms of Service Page Component
+function TermsPage() {
+  return (
+    <div className="prose prose-lg dark:prose-invert mx-auto">
+      <h1>Termos de Utilização</h1>
+      <p>
+        Última atualização: 27 de Março de 2024
+      </p>
+      
+      <h2>1. Aceitação dos Termos</h2>
+      <p>
+        Ao aceder ou utilizar o website Rua Segura ("Serviço"), concorda em ficar vinculado a estes Termos de Utilização 
+        ("Termos"). Se não concordar com alguma parte destes Termos, não poderá aceder ao Serviço.
+      </p>
+      
+      <h2>2. Descrição do Serviço</h2>
+      <p>
+        A Rua Segura é uma plataforma comunitária que permite aos residentes do Porto reportar e acompanhar incidentes 
+        de segurança na cidade. O nosso objetivo é promover a segurança pública através da partilha de informações e da 
+        colaboração com as autoridades locais.
+      </p>
+      
+      <h2>3. Registo e Utilização</h2>
+      <p>
+        Ao reportar incidentes através do nosso Serviço:
+      </p>
+      <ul>
+        <li>Concorda em fornecer informações precisas, atuais e completas</li>
+        <li>É responsável por manter a confidencialidade de quaisquer credenciais de acesso</li>
+        <li>Concorda em não criar contas falsas ou fornecer informações falsas</li>
+        <li>Tem pelo menos 18 anos ou utiliza o Serviço sob a supervisão de um adulto</li>
+      </ul>
+      
+      <h2>4. Conteúdo do Utilizador</h2>
+      <p>
+        Ao submeter conteúdo ao nosso Serviço (como relatórios de incidentes):
+      </p>
+      <ul>
+        <li>Concede-nos uma licença não exclusiva para utilizar, modificar, executar, exibir e distribuir o seu conteúdo em conexão com o Serviço</li>
+        <li>Declara e garante que tem o direito de conceder esta licença</li>
+        <li>Compreende que os relatórios podem ser partilhados com autoridades locais</li>
+        <li>É responsável pelo conteúdo que submete</li>
+      </ul>
+      
+      <h2>5. Conduta Proibida</h2>
+      <p>
+        Ao utilizar o nosso Serviço, concorda em não:
+      </p>
+      <ul>
+        <li>Submeter informações falsas ou enganosas</li>
+        <li>Violar quaisquer leis ou regulamentos aplicáveis</li>
+        <li>Assediar, intimidar ou ameaçar outros utilizadores</li>
+        <li>Interferir com o funcionamento adequado do Serviço</li>
+        <li>Tentar aceder a áreas restritas do Serviço sem autorização</li>
+        <li>Utilizar o Serviço para fins comerciais sem o nosso consentimento</li>
+      </ul>
+      
+      <h2>6. Moderação e Remoção de Conteúdo</h2>
+      <p>
+        Reservamo-nos o direito de moderar, editar ou remover qualquer conteúdo que viole estes Termos ou que consideremos 
+        inadequado. Podemos suspender ou encerrar o acesso de utilizadores que violem repetidamente estes Termos.
+      </p>
+      
+      <h2>7. Propriedade Intelectual</h2>
+      <p>
+        O Serviço e o seu conteúdo original, recursos e funcionalidades são e permanecerão propriedade exclusiva da 
+        Rua Segura e dos seus licenciadores. O Serviço é protegido por direitos de autor, marca registada e outras leis.
+      </p>
+      
+      <h2>8. Isenção de Responsabilidade</h2>
+      <p>
+        O Serviço é fornecido "tal como está" e "conforme disponível", sem garantias de qualquer tipo, expressas ou implícitas. 
+        Não garantimos que o Serviço será ininterrupto, oportuno, seguro ou livre de erros.
+      </p>
+      
+      <h2>9. Limitação de Responsabilidade</h2>
+      <p>
+        Em nenhum caso a Rua Segura, os seus diretores, funcionários ou agentes serão responsáveis por quaisquer danos 
+        indiretos, consequenciais, exemplares, incidentais, especiais ou punitivos, incluindo perda de lucros, resultantes 
+        da sua utilização do Serviço.
+      </p>
+      
+      <h2>10. Alterações aos Termos</h2>
+      <p>
+        Reservamo-nos o direito de modificar ou substituir estes Termos a qualquer momento. Notificaremos sobre alterações 
+        significativas publicando os novos Termos no nosso website.
+      </p>
+      
+      <h2>11. Lei Aplicável</h2>
+      <p>
+        Estes Termos serão regidos e interpretados de acordo com as leis de Portugal, sem consideração aos seus conflitos 
+        de princípios legais.
+      </p>
+      
+      <h2>12. Contacte-nos</h2>
+      <p>
+        Se tiver dúvidas sobre estes Termos, contacte-nos através de:
+      </p>
+      <p>
+        Email: info@ruasegura.pt<br />
+        WhatsApp: +351 912 345 678
+      </p>
     </div>
   )
 }

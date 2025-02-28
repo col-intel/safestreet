@@ -1,4 +1,4 @@
-import { Menu, ExternalLink } from "lucide-react"
+import { Menu, ExternalLink, LogIn } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -7,27 +7,36 @@ import {
 } from "@/components/ui/sheet"
 import { ModeToggle } from "@/components/mode-toggle"
 import { Link } from "react-router-dom"
+import { useAuth } from "@/lib/auth.tsx"
 
 export function Header() {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto max-w-4xl flex h-14 items-center px-4">
         <div className="mr-4 flex">
           <Link to="/" className="mr-6 flex items-center space-x-2">
-            <span className="font-bold">SafeStreet</span>
+            <span className="font-bold">Rua Segura</span>
           </Link>
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
             <Link
-              to="/submit"
+              to="/reportar"
               className="transition-colors hover:text-foreground/80 text-foreground/60"
             >
               Reportar
             </Link>
             <Link
-              to="/about"
+              to="/sobre"
               className="transition-colors hover:text-foreground/80 text-foreground/60"
             >
               Sobre
+            </Link>
+            <Link
+              to="/associacoes"
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
+            >
+              Associações
             </Link>
             <Link
               to="/faq"
@@ -36,26 +45,27 @@ export function Header() {
               FAQ
             </Link>
             <Link
-              to="/contact"
+              to="/contacto"
               className="transition-colors hover:text-foreground/80 text-foreground/60"
             >
               Contacto
             </Link>
-            <Link
-              to="/admin"
-              className="transition-colors hover:text-foreground/80 text-foreground/60"
-            >
-              Admin
-            </Link>
-            <a
-              href="https://instagram.com/safestreetporto"
-              target="_blank"
-              rel="noreferrer"
-              className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center gap-1"
-            >
-              Instagram
-              <ExternalLink className="h-3 w-3" />
-            </a>
+            {isAuthenticated ? (
+              <Link
+                to="/admin"
+                className="transition-colors hover:text-foreground/80 text-foreground/60"
+              >
+                Admin
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center gap-1"
+              >
+                <LogIn className="h-3 w-3" />
+                Login
+              </Link>
+            )}
           </nav>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
@@ -76,16 +86,22 @@ export function Header() {
               <SheetContent side="right">
                 <nav className="flex flex-col space-y-4">
                   <Link
-                    to="/submit"
+                    to="/reportar"
                     className="text-sm font-medium transition-colors"
                   >
                     Reportar
                   </Link>
                   <Link
-                    to="/about"
+                    to="/sobre"
                     className="text-sm font-medium transition-colors"
                   >
                     Sobre
+                  </Link>
+                  <Link
+                    to="/associacoes"
+                    className="text-sm font-medium transition-colors"
+                  >
+                    Associações
                   </Link>
                   <Link
                     to="/faq"
@@ -94,26 +110,27 @@ export function Header() {
                     FAQ
                   </Link>
                   <Link
-                    to="/contact"
+                    to="/contacto"
                     className="text-sm font-medium transition-colors"
                   >
                     Contacto
                   </Link>
-                  <Link
-                    to="/admin"
-                    className="text-sm font-medium transition-colors"
-                  >
-                    Admin
-                  </Link>
-                  <a
-                    href="https://instagram.com/safestreetporto"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm font-medium transition-colors flex items-center gap-1"
-                  >
-                    Instagram
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+                  {isAuthenticated ? (
+                    <Link
+                      to="/admin"
+                      className="text-sm font-medium transition-colors"
+                    >
+                      Admin
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/login"
+                      className="text-sm font-medium transition-colors flex items-center gap-1"
+                    >
+                      <LogIn className="h-3 w-3" />
+                      Login
+                    </Link>
+                  )}
                 </nav>
               </SheetContent>
             </Sheet>

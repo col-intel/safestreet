@@ -12,6 +12,8 @@ export type Incident = {
   type: string
   severity: Severity
   reporterName: string
+  email: string
+  subscribeToUpdates?: boolean
   status: "pending" | "approved" | "rejected"
 }
 

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { submitIncident, IncidentSubmission } from '@/lib/api';
 import { Freguesia, Severity, severityLabels } from '@/types';
+import { Helmet } from 'react-helmet-async';
 
 // Components
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Lock } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 // Sample data for freguesias and incident types
 const freguesias: Freguesia[] = [
@@ -53,6 +55,8 @@ const formSchema = z.object({
     required_error: "A severidade é obrigatória" 
   }),
   reporterName: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres" }),
+  email: z.string().email({ message: "Email inválido" }).min(1, { message: "O email é obrigatório" }),
+  subscribeToUpdates: z.boolean().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -69,6 +73,7 @@ export function SubmitIncidentPage() {
       date: new Date().toISOString().split('T')[0],
       time: new Date().toTimeString().slice(0, 5),
       severity: 'medium',
+      subscribeToUpdates: false,
     }
   });
   
@@ -99,6 +104,10 @@ export function SubmitIncidentPage() {
   if (submitSuccess) {
     return (
       <div className="container max-w-2xl py-10">
+        <Helmet>
+          <title>Incidente Reportado | Rua Segura Porto</title>
+          <meta name="description" content="Obrigado por contribuir para a segurança da nossa cidade. O seu reporte foi recebido e será analisado em breve." />
+        </Helmet>
         <Alert className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-900">
           <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
           <AlertTitle>Incidente Reportado com Sucesso</AlertTitle>
@@ -113,11 +122,30 @@ export function SubmitIncidentPage() {
   
   return (
     <div className="container max-w-2xl py-10">
+      <Helmet>
+        <title>Reportar Incidente | Rua Segura Porto</title>
+        <meta name="description" content="Reporte incidentes de segurança no Porto. Ajude a tornar a nossa cidade mais segura partilhando informações sobre ocorrências na sua área." />
+        <meta property="og:title" content="Reportar Incidente | Rua Segura Porto" />
+        <meta property="og:description" content="Ajude a tornar o Porto mais seguro reportando incidentes na sua área. Juntos podemos fazer a diferença." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://ruasegura.pt/reportar" />
+        <meta property="og:image" content="https://ruasegura.pt/og-image.jpg" />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Helmet>
+      
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold mb-2">Reportar Incidente de Segurança</h1>
+        <p className="text-muted-foreground max-w-[700px] mx-auto">
+          Ajude a tornar o Porto mais seguro partilhando informações sobre ocorrências na sua área.
+          Os seus relatos são essenciais para identificarmos padrões e trabalharmos com as autoridades locais.
+        </p>
+      </div>
+      
       <Card>
         <CardHeader>
-          <CardTitle>Reportar Incidente</CardTitle>
+          <CardTitle>Formulário de Reporte</CardTitle>
           <CardDescription>
-            Preencha o formulário abaixo para reportar um incidente de segurança no Porto.
+            Preencha o formulário abaixo com os detalhes do incidente.
             Todos os incidentes são revistos antes de serem publicados.
           </CardDescription>
         </CardHeader>
@@ -244,6 +272,40 @@ export function SubmitIncidentPage() {
                 {...register('reporterName')}
               />
               {errors.reporterName && <p className="text-sm text-red-500">{errors.reporterName.message}</p>}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email" className="flex items-center gap-1">
+                Email <Lock className="h-3 w-3 text-muted-foreground" />
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu.email@exemplo.com"
+                {...register('email')}
+              />
+              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+              <p className="text-xs text-muted-foreground">
+                O seu email é encriptado e apenas será utilizado para o informar sobre o estado do seu reporte.
+              </p>
+            </div>
+            
+            <div className="flex items-start space-x-2 pt-2">
+              <Checkbox 
+                id="subscribeToUpdates" 
+                {...register('subscribeToUpdates')}
+              />
+              <div className="grid gap-1.5 leading-none">
+                <Label
+                  htmlFor="subscribeToUpdates"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Quero receber atualizações da Rua Segura
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Subscreva para receber notificações sobre novos recursos e fazer parte da comunidade de segurança do Porto.
+                </p>
+              </div>
             </div>
           </CardContent>
           

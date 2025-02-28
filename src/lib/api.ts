@@ -46,7 +46,7 @@ export const getAdminIncidents = async (): Promise<Incident[]> => {
 };
 
 // Update incident status (approve/reject)
-export const updateIncidentStatus = async (id: string, status: 'approved' | 'rejected'): Promise<{ message: string }> => {
+export const updateIncidentStatus = async (id: string, status: 'pending' | 'approved' | 'rejected'): Promise<{ message: string }> => {
   try {
     const response = await axios.put(
       `${API_URL}/admin/incidents/${id}`,

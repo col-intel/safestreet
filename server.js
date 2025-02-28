@@ -1,11 +1,18 @@
 import express from 'express';
 import cors from 'cors';
-import { open } from 'sqlite';
-import sqlite3 from 'sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 import basicAuth from 'basic-auth';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { 
+  initializeDatabase, 
+  getDb, 
+  getAllIncidents, 
+  getIncidentsByStatus, 
+  createIncident, 
+  updateIncidentStatus, 
+  getAdminIncidents 
+} from './db-adapter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,9 +28,9 @@ app.use(express.json());
 const adminAuth = (req, res, next) => {
   const user = basicAuth(req);
   
-  // Replace with your own credentials or use environment variables
-  const username = 'admin';
-  const password = 'safestreet';
+  // Use environment variables for credentials
+  const username = process.env.ADMIN_USERNAME || 'admin';
+  const password = process.env.ADMIN_PASSWORD || 'safestreet';
   
   if (!user || user.name !== username || user.pass !== password) {
     res.set('WWW-Authenticate', 'Basic realm="Admin Area"');
@@ -33,33 +40,15 @@ const adminAuth = (req, res, next) => {
   next();
 };
 
-// Database setup
-let db;
-
-async function initializeDatabase() {
-  db = await open({
-    filename: './database.sqlite',
-    driver: sqlite3.Database
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    database: process.env.NODE_ENV === 'production' ? 'postgres' : 'sqlite'
   });
-  
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS incidents (
-      id TEXT PRIMARY KEY,
-      date TEXT NOT NULL,
-      time TEXT NOT NULL,
-      location TEXT NOT NULL,
-      freguesia TEXT NOT NULL,
-      description TEXT NOT NULL,
-      type TEXT NOT NULL,
-      severity TEXT NOT NULL,
-      reporterName TEXT NOT NULL,
-      status TEXT DEFAULT 'pending',
-      createdAt TEXT NOT NULL
-    )
-  `);
-  
-  console.log('Database initialized');
-}
+});
 
 // Routes
 app.get('/api/incidents', async (req, res) => {
@@ -68,9 +57,9 @@ app.get('/api/incidents', async (req, res) => {
     let incidents;
     
     if (status) {
-      incidents = await db.all('SELECT * FROM incidents WHERE status = ? ORDER BY date DESC, time DESC', status);
+      incidents = await getIncidentsByStatus(status);
     } else {
-      incidents = await db.all('SELECT * FROM incidents ORDER BY date DESC, time DESC');
+      incidents = await getAllIncidents();
     }
     
     res.json(incidents);
@@ -94,12 +83,21 @@ app.post('/api/incidents', async (req, res) => {
     const id = uuidv4();
     const createdAt = new Date().toISOString();
     
-    await db.run(
-      'INSERT INTO incidents (id, date, time, location, freguesia, description, type, severity, reporterName, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, date, time, location, freguesia, description, type, severity, reporterName, 'pending', createdAt]
-    );
+    const result = await createIncident({
+      id, 
+      date, 
+      time, 
+      location, 
+      freguesia, 
+      description, 
+      type, 
+      severity, 
+      reporterName, 
+      status: 'pending', 
+      createdAt
+    });
     
-    res.status(201).json({ id, message: 'Incident reported successfully' });
+    res.status(201).json({ id: result.id, message: 'Incident reported successfully' });
   } catch (error) {
     console.error('Error creating incident:', error);
     res.status(500).json({ error: 'Failed to create incident' });
@@ -109,7 +107,7 @@ app.post('/api/incidents', async (req, res) => {
 // Admin routes (protected)
 app.get('/api/admin/incidents', adminAuth, async (req, res) => {
   try {
-    const incidents = await db.all('SELECT * FROM incidents ORDER BY createdAt DESC');
+    const incidents = await getAdminIncidents();
     res.json(incidents);
   } catch (error) {
     console.error('Error fetching incidents for admin:', error);
@@ -126,7 +124,7 @@ app.put('/api/admin/incidents/:id', adminAuth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid status' });
     }
     
-    await db.run('UPDATE incidents SET status = ? WHERE id = ?', [status, id]);
+    await updateIncidentStatus(id, status);
     res.json({ message: 'Incident status updated successfully' });
   } catch (error) {
     console.error('Error updating incident status:', error);
@@ -136,6 +134,8 @@ app.put('/api/admin/incidents/:id', adminAuth, async (req, res) => {
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
+  // In Vercel, static files are handled by the vercel.json configuration
+  // This is just a fallback
   app.use(express.static(join(__dirname, 'dist')));
   
   app.get('*', (req, res) => {
@@ -143,13 +143,35 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Initialize database and start server
-initializeDatabase()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+// Initialize database
+let dbInitialized = false;
+
+// Middleware to ensure DB is initialized before handling requests
+app.use(async (req, res, next) => {
+  if (!dbInitialized) {
+    try {
+      await initializeDatabase();
+      dbInitialized = true;
+    } catch (error) {
+      console.error('Failed to initialize database:', error);
+      return res.status(500).json({ error: 'Database initialization failed' });
+    }
+  }
+  next();
+});
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  initializeDatabase()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+      });
+    })
+    .catch(err => {
+      console.error('Failed to initialize database:', err);
     });
-  })
-  .catch(err => {
-    console.error('Failed to initialize database:', err);
-  }); 
+}
+
+// For Vercel serverless functions
+export default app; 
