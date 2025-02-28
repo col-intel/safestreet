@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import basicAuth from 'basic-auth';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import https from 'https';
 import { 
   initializeDatabase, 
   getDb, 
@@ -13,6 +14,23 @@ import {
   updateIncidentStatus, 
   getAdminIncidents 
 } from './db-adapter.js';
+
+// Configure global HTTPS agent to handle SSL certificate issues
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false,
+  checkServerIdentity: () => undefined
+});
+
+// Apply the agent to global fetch if available
+if (typeof global.fetch !== 'undefined') {
+  const originalFetch = global.fetch;
+  global.fetch = function(url, options = {}) {
+    if (url.toString().includes('supabase') || url.toString().includes('neon.tech')) {
+      options.agent = httpsAgent;
+    }
+    return originalFetch(url, options);
+  };
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

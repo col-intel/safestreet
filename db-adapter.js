@@ -32,13 +32,15 @@ export async function initializeDatabase() {
       pgPool = new pg.Pool({
         connectionString,
         ssl: {
-          rejectUnauthorized: false
+          rejectUnauthorized: false,
+          // Don't check hostname in certificate
+          checkServerIdentity: () => undefined
         },
         // Add connection timeout and retry options
-        connectionTimeoutMillis: 5000,
-        query_timeout: 10000,
-        statement_timeout: 10000,
-        idle_in_transaction_session_timeout: 10000
+        connectionTimeoutMillis: 10000, // Increased timeout
+        query_timeout: 15000, // Increased timeout
+        statement_timeout: 15000, // Increased timeout
+        idle_in_transaction_session_timeout: 15000 // Increased timeout
       });
       
       // Test the connection
@@ -128,72 +130,141 @@ async function createTablesInPostgres() {
   `;
 }
 
-// Database operations
-export async function getAllIncidents() {
-  if (process.env.NODE_ENV === 'production') {
+// Add a retry mechanism for database operations
+async function withRetry(operation, maxRetries = 3, delay = 1000) {
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      // Try using @vercel/postgres first
-      const result = await sql`SELECT * FROM incidents ORDER BY date DESC, time DESC`;
-      return result.rows;
+      return await operation();
     } catch (error) {
-      console.error('Error using @vercel/postgres for getAllIncidents, falling back to pg Pool:', error);
-      // Fall back to pg Pool
-      try {
-        const client = await pgPool.connect();
-        try {
-          const result = await client.query('SELECT * FROM incidents ORDER BY date DESC, time DESC');
-          return result.rows;
-        } finally {
-          client.release();
-        }
-      } catch (pgError) {
-        console.error('Error using pg Pool for getAllIncidents, falling back to direct connection:', pgError);
-        // Fall back to direct connection as a last resort
-        try {
-          return await directDb.getAllDirectIncidents();
-        } catch (directDbError) {
-          console.error('Error using direct connection for getAllIncidents:', directDbError);
-          // Return empty array instead of failing
-          return [];
-        }
+      console.error(`Attempt ${attempt}/${maxRetries} failed:`, error.message);
+      lastError = error;
+      
+      if (attempt < maxRetries) {
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        // Exponential backoff
+        delay *= 2;
       }
     }
+  }
+  
+  throw lastError;
+}
+
+// Database operations
+export async function getAllIncidents() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  if (isProduction) {
+    try {
+      // First try with @vercel/postgres
+      try {
+        return await withRetry(async () => {
+          const result = await sql`SELECT * FROM incidents ORDER BY date DESC, time DESC`;
+          return result.rows;
+        });
+      } catch (error) {
+        console.error('Error using @vercel/postgres for getAllIncidents, falling back to pg Pool:', error);
+        
+        // Fallback to pg Pool
+        try {
+          if (!pgPool) {
+            await initializeDatabase();
+          }
+          
+          return await withRetry(async () => {
+            const client = await pgPool.connect();
+            try {
+              const result = await client.query('SELECT * FROM incidents ORDER BY date DESC, time DESC');
+              return result.rows;
+            } finally {
+              client.release();
+            }
+          });
+        } catch (pgError) {
+          console.error('Error using pg Pool for getAllIncidents, falling back to direct DB:', pgError);
+          
+          // Last resort: try direct DB connection
+          if (directDbInitialized) {
+            return await directDb.getAllDirectIncidents();
+          } else {
+            try {
+              await directDb.initializeDirectDb();
+              directDbInitialized = true;
+              return await directDb.getAllDirectIncidents();
+            } catch (directDbError) {
+              console.error('Error using direct DB for getAllIncidents:', directDbError);
+              throw directDbError;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('All methods failed for getAllIncidents:', error);
+      return []; // Return empty array instead of failing
+    }
   } else {
-    return await db.all('SELECT * FROM incidents ORDER BY date DESC, time DESC');
+    // In development, use SQLite
+    return (await db.all('SELECT * FROM incidents ORDER BY date DESC, time DESC'));
   }
 }
 
 export async function getIncidentsByStatus(status) {
-  if (process.env.NODE_ENV === 'production') {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  if (isProduction) {
     try {
-      // Try using @vercel/postgres first
-      const result = await sql`SELECT * FROM incidents WHERE status = ${status} ORDER BY date DESC, time DESC`;
-      return result.rows;
-    } catch (error) {
-      console.error('Error using @vercel/postgres for getIncidentsByStatus, falling back to pg Pool:', error);
-      // Fall back to pg Pool
+      // First try with @vercel/postgres
       try {
-        const client = await pgPool.connect();
-        try {
-          const result = await client.query('SELECT * FROM incidents WHERE status = $1 ORDER BY date DESC, time DESC', [status]);
+        return await withRetry(async () => {
+          const result = await sql`SELECT * FROM incidents WHERE status = ${status} ORDER BY date DESC, time DESC`;
           return result.rows;
-        } finally {
-          client.release();
-        }
-      } catch (pgError) {
-        console.error('Error using pg Pool for getIncidentsByStatus, falling back to direct connection:', pgError);
-        // Fall back to direct connection as a last resort
+        });
+      } catch (error) {
+        console.error('Error using @vercel/postgres for getIncidentsByStatus, falling back to pg Pool:', error);
+        
+        // Fallback to pg Pool
         try {
-          return await directDb.getDirectIncidentsByStatus(status);
-        } catch (directDbError) {
-          console.error('Error using direct connection for getIncidentsByStatus:', directDbError);
-          // Return empty array instead of failing
-          return [];
+          if (!pgPool) {
+            await initializeDatabase();
+          }
+          
+          return await withRetry(async () => {
+            const client = await pgPool.connect();
+            try {
+              const result = await client.query('SELECT * FROM incidents WHERE status = $1 ORDER BY date DESC, time DESC', [status]);
+              return result.rows;
+            } finally {
+              client.release();
+            }
+          });
+        } catch (pgError) {
+          console.error('Error using pg Pool for getIncidentsByStatus, falling back to direct DB:', pgError);
+          
+          // Last resort: try direct DB connection
+          if (directDbInitialized) {
+            return await directDb.getDirectIncidentsByStatus(status);
+          } else {
+            try {
+              await directDb.initializeDirectDb();
+              directDbInitialized = true;
+              return await directDb.getDirectIncidentsByStatus(status);
+            } catch (directDbError) {
+              console.error('Error using direct DB for getIncidentsByStatus:', directDbError);
+              throw directDbError;
+            }
+          }
         }
       }
+    } catch (error) {
+      console.error('All methods failed for getIncidentsByStatus:', error);
+      return []; // Return empty array instead of failing
     }
   } else {
-    return await db.all('SELECT * FROM incidents WHERE status = ? ORDER BY date DESC, time DESC', status);
+    // In development, use SQLite
+    return (await db.all('SELECT * FROM incidents WHERE status = ? ORDER BY date DESC, time DESC', [status]));
   }
 }
 
