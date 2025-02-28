@@ -1,7 +1,7 @@
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
-import { Incident, Severity, severityLabels } from "../src/types"
+import { Incident, Severity, severityLabels } from "@/types"
 import Link from "next/link"
 import { useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
