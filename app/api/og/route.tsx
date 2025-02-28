@@ -12,11 +12,6 @@ export async function GET(req: NextRequest) {
     const description = searchParams.get('description') || 'Plataforma cidadã para segurança viária no Porto';
     const type = searchParams.get('type') || 'default';
     
-    // Font
-    const fontData = await fetch(
-      new URL('../../fonts/Inter-Bold.ttf', import.meta.url)
-    ).then((res) => res.arrayBuffer());
-    
     // Generate the image
     return new ImageResponse(
       (
@@ -34,6 +29,7 @@ export async function GET(req: NextRequest) {
             padding: '80px 40px',
             textAlign: 'center',
             position: 'relative',
+            fontFamily: 'sans-serif',
           }}
         >
           {/* Border */}
@@ -138,14 +134,6 @@ export async function GET(req: NextRequest) {
       {
         width: 1200,
         height: 630,
-        fonts: [
-          {
-            name: 'Inter',
-            data: fontData,
-            style: 'normal',
-            weight: 700,
-          },
-        ],
       }
     );
   } catch (error) {
