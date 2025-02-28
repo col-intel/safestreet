@@ -11,6 +11,8 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // Nile PostgreSQL doesn't support schemas other than public
+  schemas  = ["public"]
 }
 
 model Incident {

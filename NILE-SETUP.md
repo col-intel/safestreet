@@ -31,30 +31,44 @@ npm install
 
 ## Step 4: Configure Local Environment Variables
 
-1. Create a `.env.local` file in the root of the project
+1. Create a `.env.local` file in the root of the project (for local development only)
 2. Add your Nile PostgreSQL connection string (you can get this from your Vercel dashboard):
 
 ```
-DATABASE_URL="postgresql://username:password@db.thenile.dev:5432/database-name?sslmode=require"
+DATABASE_URL="postgresql://username:password@db.thenile.dev:5432/database-name?tenant=default&sslmode=require"
 ADMIN_USERNAME="admin"
 ADMIN_PASSWORD="safestreet"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
-## Step 5: Set Up the Database
+**Important**: 
+- Make sure to include the `tenant=default` parameter in your connection string. This is required for Nile PostgreSQL to work properly.
+- Do not create a `.env.production` file. For production, set environment variables directly in the Vercel dashboard.
 
-Run the database setup script:
+## Step 5: Test the Database Connection
+
+Before setting up the database, test the connection to make sure it's working:
 
 ```bash
-npm run setup:db
+npm run test:connection
+```
+
+If the connection is successful, you should see a message indicating that the connection was successful.
+
+## Step 6: Set Up the Database
+
+Run the Nile-specific database setup script:
+
+```bash
+npm run setup:nile
 ```
 
 This will:
 - Generate the Prisma client
-- Create and apply migrations
+- Create the database schema using `prisma db push`
 - Seed the database with initial data
 
-## Step 6: Start the Development Server
+## Step 7: Start the Development Server
 
 ```bash
 npm run dev
@@ -62,42 +76,60 @@ npm run dev
 
 The application should now be running at [http://localhost:3000](http://localhost:3000).
 
-## Working with Migrations
+## Working with Nile PostgreSQL
 
-### Creating Migrations
+### Understanding Tenants
 
-When you make changes to your Prisma schema, you need to create a new migration:
+Nile PostgreSQL is designed for multi-tenant applications. Each tenant has its own isolated data. In our application, we're using a default tenant for simplicity, but you can create multiple tenants if needed.
 
-```bash
-npm run migrate:dev
+To specify a tenant when connecting to the database, you need to include the `tenant` parameter in your connection string:
+
+```
+DATABASE_URL="postgresql://username:password@db.thenile.dev:5432/database-name?tenant=tenant-id&sslmode=require"
 ```
 
-This will:
-- Generate a new migration based on your schema changes
-- Apply the migration to your local database
+### Schema Changes
 
-### Deploying Migrations
-
-To deploy migrations to your production database:
+When you make changes to your Prisma schema, you need to push those changes to the database:
 
 ```bash
-npm run migrate:deploy
+npx prisma db push
 ```
 
-This will apply all pending migrations to your production database.
+This will update the database schema without creating migrations.
 
-## Deploying to Vercel
+### Deploying to Vercel
 
 1. Push your code to GitHub
 2. Create a new project in Vercel (if you haven't already)
 3. Connect it to your GitHub repository
 4. Make sure the Nile PostgreSQL integration is connected to your project
-5. Vercel will automatically build and deploy your application
+5. Set up environment variables in the Vercel dashboard:
+   - `DATABASE_URL` (automatically set by Nile PostgreSQL integration)
+   - `ADMIN_USERNAME` and `ADMIN_PASSWORD` for authentication
+   - `NEXT_PUBLIC_APP_URL` with your production URL
 
 The build process will:
 1. Generate the Prisma client
-2. Apply any pending migrations to your Nile PostgreSQL database
+2. Push the schema to your Nile PostgreSQL database
 3. Build your Next.js application
+
+## Troubleshooting
+
+### "Tenant or user not found" Error
+
+If you encounter a "Tenant or user not found" error, it means that the tenant specified in your connection string doesn't exist or you haven't included the tenant parameter.
+
+To fix this:
+1. Make sure your connection string includes the `tenant=default` parameter
+2. If you're using a custom tenant, make sure it exists in your Nile PostgreSQL database
+
+### Connection Issues
+
+If you're having trouble connecting to the database:
+1. Run `npm run test:connection` to test the connection
+2. Check your connection string to make sure it's correct
+3. Make sure your Nile PostgreSQL database is properly set up in Vercel
 
 ## Nile PostgreSQL Features
 
