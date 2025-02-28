@@ -29,6 +29,7 @@ import { Separator } from '@/components/ui/separator';
 import { Loader2, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { createIncident } from '@/lib/api';
 import { Severity, Incident } from '@/types';
+import { freguesiasList } from '@/lib/constants';
 
 const formSchema = z.object({
   location: z.string().min(5, {
@@ -73,31 +74,6 @@ const incidentTypes = [
   'Consumo de drogas em público',
   'Comportamento suspeito',
   'Outro',
-];
-
-const freguesias = [
-  'Alvalade',
-  'Areeiro',
-  'Arroios',
-  'Avenidas Novas',
-  'Beato',
-  'Belém',
-  'Benfica',
-  'Campo de Ourique',
-  'Campolide',
-  'Carnide',
-  'Estrela',
-  'Lumiar',
-  'Marvila',
-  'Misericórdia',
-  'Olivais',
-  'Parque das Nações',
-  'Penha de França',
-  'Santa Clara',
-  'Santa Maria Maior',
-  'Santo António',
-  'São Domingos de Benfica',
-  'São Vicente',
 ];
 
 // Helper function to format date as dd/mm/yyyy
@@ -325,7 +301,7 @@ export default function ReportPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="border-dashed">
-                            {freguesias.map((freguesia) => (
+                            {freguesiasList.map((freguesia) => (
                               <SelectItem key={freguesia} value={freguesia}>
                                 {freguesia}
                               </SelectItem>

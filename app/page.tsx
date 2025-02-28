@@ -11,17 +11,7 @@ import { IncidentList } from '@/components/incident-list';
 import { getApprovedIncidents } from '@/lib/api';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
-
-// Sample data for freguesias
-const freguesias: Freguesia[] = [
-  "Aldoar, Foz do Douro e Nevogilde",
-  "Bonfim",
-  "Campanhã",
-  "Cedofeita, Santo Ildefonso, Sé, Miragaia, São Nicolau e Vitória",
-  "Lordelo do Ouro e Massarelos",
-  "Paranhos",
-  "Ramalde"
-];
+import { freguesiasList } from '@/lib/constants';
 
 // Severity colors for badges
 const severityColors: Record<Severity, string> = {
@@ -134,7 +124,7 @@ export default function HomePage() {
                 </SelectTrigger>
                 <SelectContent className="border-dashed">
                   <SelectItem value="all">Todas as Freguesias</SelectItem>
-                  {freguesias.map((freguesia) => (
+                  {freguesiasList.map((freguesia) => (
                     <SelectItem key={freguesia} value={freguesia}>
                       {freguesia}
                     </SelectItem>
