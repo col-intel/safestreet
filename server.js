@@ -46,7 +46,9 @@ app.get('/api/health', (req, res) => {
     status: 'ok', 
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    database: process.env.NODE_ENV === 'production' ? 'postgres' : 'sqlite'
+    database: process.env.NODE_ENV === 'production' ? 'postgres' : 'sqlite',
+    host: req.headers.host,
+    vercel_region: process.env.VERCEL_REGION || 'unknown'
   });
 });
 
@@ -57,15 +59,27 @@ app.get('/api/incidents', async (req, res) => {
     let incidents;
     
     if (status) {
-      incidents = await getIncidentsByStatus(status);
+      try {
+        incidents = await getIncidentsByStatus(status);
+      } catch (error) {
+        console.error('Error fetching incidents by status:', error);
+        // Return empty array instead of failing
+        incidents = [];
+      }
     } else {
-      incidents = await getAllIncidents();
+      try {
+        incidents = await getAllIncidents();
+      } catch (error) {
+        console.error('Error fetching all incidents:', error);
+        // Return empty array instead of failing
+        incidents = [];
+      }
     }
     
     res.json(incidents);
   } catch (error) {
-    console.error('Error fetching incidents:', error);
-    res.status(500).json({ error: 'Failed to fetch incidents' });
+    console.error('Error in /api/incidents route:', error);
+    res.status(500).json({ error: 'Failed to fetch incidents', message: error.message });
   }
 });
 

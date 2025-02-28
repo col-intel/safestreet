@@ -14,15 +14,39 @@ export async function initializeDatabase() {
     // Use Vercel Postgres in production
     try {
       // For direct SQL queries using @vercel/postgres
-      await createTablesInPostgres();
+      try {
+        await createTablesInPostgres();
+        console.log('Tables created successfully in Postgres');
+      } catch (error) {
+        console.error('Error creating tables in Postgres:', error);
+        // Continue anyway, tables might already exist
+      }
       
       // For more complex queries, we'll use the pg Pool
+      const connectionString = process.env.POSTGRES_URL;
+      console.log('Connecting to Postgres with connection string (masked):', 
+        connectionString ? `${connectionString.substring(0, 10)}...` : 'undefined');
+      
       pgPool = new pg.Pool({
-        connectionString: process.env.POSTGRES_URL,
+        connectionString,
         ssl: {
           rejectUnauthorized: false
-        }
+        },
+        // Add connection timeout and retry options
+        connectionTimeoutMillis: 5000,
+        query_timeout: 10000,
+        statement_timeout: 10000,
+        idle_in_transaction_session_timeout: 10000
       });
+      
+      // Test the connection
+      const client = await pgPool.connect();
+      try {
+        const result = await client.query('SELECT NOW()');
+        console.log('PostgreSQL connection test successful:', result.rows[0]);
+      } finally {
+        client.release();
+      }
       
       console.log('PostgreSQL database initialized in production');
       return true;
