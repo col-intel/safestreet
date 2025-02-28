@@ -1,19 +1,17 @@
 import axios from 'axios';
 import { Incident } from '@/types';
 
-// Determine the API URL based on the environment
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 
-  (typeof window !== 'undefined' && window.location.origin) || 
-  'http://localhost:3000';
-
 // Type for incident submission
-export type IncidentSubmission = Omit<Incident, 'id' | 'status' | 'createdAt'>;
+export type IncidentSubmission = Omit<Incident, 'id' | 'status'>;
 
 // Get all approved incidents for public display
 export const getApprovedIncidents = async (): Promise<Incident[]> => {
   try {
-    const response = await axios.get(`${API_URL}/api/incidents?status=approved`);
-    return response.data;
+    const response = await fetch('/api/incidents?status=approved');
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    return await response.json();
   } catch (error) {
     console.error('Error fetching approved incidents:', error);
     throw error;
@@ -23,8 +21,19 @@ export const getApprovedIncidents = async (): Promise<Incident[]> => {
 // Submit a new incident
 export const submitIncident = async (incident: IncidentSubmission): Promise<{ id: string; message: string }> => {
   try {
-    const response = await axios.post(`${API_URL}/api/incidents`, incident);
-    return response.data;
+    const response = await fetch('/api/incidents', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(incident),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    
+    return await response.json();
   } catch (error) {
     console.error('Error submitting incident:', error);
     throw error;
@@ -35,13 +44,17 @@ export const submitIncident = async (incident: IncidentSubmission): Promise<{ id
 // Get all incidents for admin (requires authentication)
 export const getAdminIncidents = async (): Promise<Incident[]> => {
   try {
-    const response = await axios.get(`${API_URL}/api/admin/incidents`, {
-      auth: {
-        username: process.env.NEXT_PUBLIC_ADMIN_USERNAME || 'admin',
-        password: process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'safestreet'
-      }
+    const response = await fetch('/api/admin/incidents', {
+      headers: {
+        'Authorization': `Basic ${btoa(`${process.env.NEXT_PUBLIC_ADMIN_USERNAME || 'admin'}:${process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'safestreet'}`)}`,
+      },
     });
-    return response.data;
+    
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    
+    return await response.json();
   } catch (error) {
     console.error('Error fetching admin incidents:', error);
     throw error;
@@ -51,17 +64,20 @@ export const getAdminIncidents = async (): Promise<Incident[]> => {
 // Update incident status (approve/reject)
 export const updateIncidentStatus = async (id: string, status: 'pending' | 'approved' | 'rejected'): Promise<{ message: string }> => {
   try {
-    const response = await axios.put(
-      `${API_URL}/api/admin/incidents/${id}`,
-      { status },
-      {
-        auth: {
-          username: process.env.NEXT_PUBLIC_ADMIN_USERNAME || 'admin',
-          password: process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'safestreet'
-        }
-      }
-    );
-    return response.data;
+    const response = await fetch(`/api/admin/incidents/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${btoa(`${process.env.NEXT_PUBLIC_ADMIN_USERNAME || 'admin'}:${process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'safestreet'}`)}`,
+      },
+      body: JSON.stringify({ status }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    
+    return await response.json();
   } catch (error) {
     console.error('Error updating incident status:', error);
     throw error;
