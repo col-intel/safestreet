@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function ContactoPage() {
   return (
-    <div className="container mx-auto max-w-4xl py-8 px-4">
+    <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-6">Contacte-nos</h1>
       
       <p className="text-muted-foreground mb-8">
@@ -13,7 +13,7 @@ export default function ContactoPage() {
         Entre em contacto connosco através do nosso email.
       </p>
       
-      <div className="max-w-4xl mx-auto">
+      <div className="mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex items-center justify-center space-x-3 p-6 bg-muted rounded-lg">
             <Mail className="h-6 w-6 text-primary" />

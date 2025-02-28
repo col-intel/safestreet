@@ -74,7 +74,7 @@ export default function IncidentDetailPage() {
   
   if (error || !incident) {
     return (
-      <div className="max-w-3xl mx-auto py-12">
+      <div className="container mx-auto py-12">
         <Card className="border-destructive/20 bg-destructive/5 border-dashed">
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
@@ -101,7 +101,7 @@ export default function IncidentDetailPage() {
   }
   
   return (
-    <div className="max-w-3xl mx-auto py-12">
+    <div className="container mx-auto py-12">
       <div className="mb-8 flex items-center justify-between">
         <Button asChild variant="outline" size="sm" className="border-dashed">
           <Link href="/" className="flex items-center gap-2">

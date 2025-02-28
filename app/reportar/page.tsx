@@ -28,7 +28,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator';
 import { Loader2, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { createIncident } from '@/lib/api';
-import { Severity } from '@/types';
+import { Severity, Incident } from '@/types';
 
 const formSchema = z.object({
   location: z.string().min(5, {
@@ -39,6 +39,9 @@ const formSchema = z.object({
   }),
   type: z.string().min(1, {
     message: 'Por favor selecione um tipo de incidente.',
+  }),
+  date: z.string().regex(/^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/, {
+    message: 'Por favor insira uma data válida no formato DD/MM/AAAA.',
   }),
   description: z.string().min(10, {
     message: 'A descrição deve ter pelo menos 10 caracteres.',
@@ -57,13 +60,18 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const incidentTypes = [
-  'Buraco na estrada',
-  'Iluminação pública danificada',
-  'Sinalização danificada',
-  'Passadeira apagada',
-  'Obstáculo na via',
-  'Árvore caída',
-  'Inundação',
+  'Iluminação pública deficiente',
+  'Vandalismo em propriedade pública',
+  'Graffiti não autorizado',
+  'Lixo acumulado',
+  'Mobiliário urbano danificado',
+  'Vegetação obstruindo passagem',
+  'Espaço público inseguro',
+  'Agressão',
+  'Roubo/Furto',
+  'Tráfico de drogas',
+  'Consumo de drogas em público',
+  'Comportamento suspeito',
   'Outro',
 ];
 
@@ -92,6 +100,61 @@ const freguesias = [
   'São Vicente',
 ];
 
+// Helper function to format date as dd/mm/yyyy
+function formatDateToDDMMYYYY(date: Date): string {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+// Helper function to parse dd/mm/yyyy to Date object with improved validation
+function parseDDMMYYYY(dateString: string): Date {
+  try {
+    // Check if the string matches the expected format
+    if (!/^(\d{2})\/(\d{2})\/(\d{4})$/.test(dateString)) {
+      console.error('Date string does not match expected format DD/MM/YYYY:', dateString);
+      return new Date(); // Return current date as fallback
+    }
+    
+    // Extract components and convert to numbers
+    const [dayStr, monthStr, yearStr] = dateString.split('/');
+    const day = parseInt(dayStr, 10);
+    const month = parseInt(monthStr, 10);
+    const year = parseInt(yearStr, 10);
+    
+    // Basic validation
+    if (isNaN(day) || isNaN(month) || isNaN(year) || 
+        day < 1 || day > 31 || month < 1 || month > 12 || year < 1900 || year > 2100) {
+      console.error('Invalid date components:', { day, month, year });
+      return new Date(); // Return current date as fallback
+    }
+    
+    // Create date at noon UTC to avoid timezone issues
+    // Using noon (12:00:00) helps avoid date shifting due to timezone conversions
+    const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+    
+    // Verify the date is valid (handles cases like Feb 31)
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+      console.error('Date validation failed:', { 
+        input: { day, month, year }, 
+        output: { 
+          year: date.getUTCFullYear(), 
+          month: date.getUTCMonth() + 1, 
+          day: date.getUTCDate() 
+        } 
+      });
+      return new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate(), 12, 0, 0)); // Return current date at noon UTC as fallback
+    }
+    
+    return date;
+  } catch (error) {
+    console.error('Error parsing date:', error);
+    // Return current date at noon UTC as fallback
+    return new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate(), 12, 0, 0));
+  }
+}
+
 export default function ReportPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,6 +167,7 @@ export default function ReportPage() {
       location: '',
       freguesia: '',
       type: '',
+      date: formatDateToDDMMYYYY(new Date()),
       description: '',
       severity: 'medium',
       reporterName: '',
@@ -117,23 +181,62 @@ export default function ReportPage() {
     setErrorMessage('');
     
     try {
-      await createIncident({
-        ...values,
-        date: new Date().toISOString(),
-        status: 'pending',
+      // Parse the date from dd/mm/yyyy format to Date object
+      const dateObj = parseDDMMYYYY(values.date);
+      
+      // Format as ISO string with timezone handling
+      const isoDate = dateObj.toISOString();
+      
+      // Log detailed information for debugging
+      console.log('Parsed date:', { 
+        input: values.date, 
+        dateObj: dateObj.toString(), 
+        isoDate,
+        mockFormat: '2023-05-15T10:30:00Z', // Example from mock data
+        utcComponents: {
+          year: dateObj.getUTCFullYear(),
+          month: dateObj.getUTCMonth() + 1,
+          day: dateObj.getUTCDate(),
+          hours: dateObj.getUTCHours(),
+          minutes: dateObj.getUTCMinutes()
+        }
       });
       
-      setSubmitStatus('success');
+      // Create an object that matches the Incident type structure
+      const incidentData: Omit<Incident, 'id'> = {
+        date: isoDate,
+        status: 'pending',
+        location: values.location,
+        freguesia: values.freguesia,
+        type: values.type,
+        description: values.description,
+        severity: values.severity,
+        reporterName: values.reporterName,
+        email: values.reporterEmail,
+      };
       
-      // Reset form after successful submission
-      form.reset();
+      console.log('Submitting incident data:', incidentData);
       
-      // Redirect to home page after 2 seconds
-      setTimeout(() => {
-        router.push('/');
-      }, 2000);
+      try {
+        const result = await createIncident(incidentData);
+        console.log('Incident created successfully:', result);
+        
+        setSubmitStatus('success');
+        
+        // Reset form after successful submission
+        form.reset();
+        
+        // Redirect to home page after 2 seconds
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
+      } catch (apiError) {
+        console.error('API error creating incident:', apiError);
+        setSubmitStatus('error');
+        setErrorMessage(`Erro ao criar incidente: ${apiError instanceof Error ? apiError.message : 'Erro desconhecido'}`);
+      }
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error('Error in form submission:', error);
       setSubmitStatus('error');
       setErrorMessage('Ocorreu um erro ao submeter o formulário. Por favor tente novamente.');
     } finally {
@@ -142,11 +245,11 @@ export default function ReportPage() {
   }
   
   return (
-    <div className="container max-w-3xl py-12">
+    <div className="container mx-auto py-12">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Reportar Incidente</h1>
         <p className="text-muted-foreground">
-          Preencha o formulário abaixo para reportar um problema de segurança viária.
+          Preencha o formulário abaixo para reportar um problema de segurança urbana.
         </p>
       </div>
       
@@ -184,7 +287,7 @@ export default function ReportPage() {
         <CardHeader>
           <CardTitle>Detalhes do Incidente</CardTitle>
           <CardDescription>
-            Forneça informações detalhadas sobre o problema que encontrou.
+            Forneça informações detalhadas sobre o problema de segurança que encontrou.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -259,6 +362,28 @@ export default function ReportPage() {
                     )}
                   />
                 </div>
+                
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data do Incidente</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="text" 
+                          placeholder="DD/MM/AAAA"
+                          className="border-dashed" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Indique quando o incidente ocorreu (formato: DD/MM/AAAA).
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
                 <FormField
                   control={form.control}

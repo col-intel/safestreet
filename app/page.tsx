@@ -77,7 +77,7 @@ export default function HomePage() {
   return (
     <>
       <section className="py-12 md:py-16 text-center">
-        <div className="container mx-auto max-w-3xl px-4">
+        <div className="container mx-auto max-w-6xl px-4">
           <div className="flex items-center justify-center mb-6">
             <Shield className="h-12 w-12 text-primary" />
           </div>
@@ -104,7 +104,7 @@ export default function HomePage() {
       <Separator className="my-2 border-dashed" />
 
       <section className="py-8">
-        <div className="container mx-auto">
+        <div className="container mx-auto max-w-6xl">
           <Card className="border-primary/20 bg-primary/5 border-dashed">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
@@ -123,8 +123,8 @@ export default function HomePage() {
       </section>
 
       <section className="py-8">
-        <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row gap-6 mb-8 items-start md:items-center justify-between">
+        <div className="container mx-auto max-w-6xl px-0 sm:px-4">
+          <div className="flex flex-col md:flex-row gap-6 mb-8 items-start md:items-center justify-between px-4 sm:px-0">
             <div>
               <h2 className="text-3xl font-bold mb-2">Incidentes Recentes</h2>
               <p className="text-muted-foreground">
@@ -162,23 +162,27 @@ export default function HomePage() {
           </div>
 
           {loading ? (
-            <div className="flex justify-center items-center py-16">
+            <div className="flex justify-center items-center py-16 px-4 sm:px-0">
               <div className="flex flex-col items-center gap-2">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 <p className="text-sm text-muted-foreground">A carregar incidentes...</p>
               </div>
             </div>
           ) : error ? (
-            <Card className="border-destructive/20 bg-destructive/5 p-6 border-dashed">
-              <div className="flex items-start gap-4">
-                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
-                <AlertDescription>{error}</AlertDescription>
-              </div>
-            </Card>
+            <div className="px-0 sm:px-0">
+              <Card className="border-destructive/20 bg-destructive/5 p-6 border-dashed rounded-none sm:rounded-lg">
+                <div className="flex items-start gap-4">
+                  <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                  <AlertDescription>{error}</AlertDescription>
+                </div>
+              </Card>
+            </div>
           ) : filteredIncidents.length === 0 ? (
-            <Card className="border-muted/20 bg-muted/5 p-8 text-center border-dashed">
-              <p className="text-muted-foreground">Nenhum incidente encontrado com os filtros selecionados.</p>
-            </Card>
+            <div className="px-0 sm:px-0">
+              <Card className="border-muted/20 bg-muted/5 p-8 text-center border-dashed rounded-none sm:rounded-lg">
+                <p className="text-muted-foreground">Nenhum incidente encontrado com os filtros selecionados.</p>
+              </Card>
+            </div>
           ) : (
             <IncidentList incidents={filteredIncidents} />
           )}
