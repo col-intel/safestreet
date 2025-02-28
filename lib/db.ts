@@ -1,5 +1,17 @@
-// Re-export the Nile-specific database client
-import prisma from './nile-db';
+// Import the db-url utility to ensure the DATABASE_URL has the tenant parameter
+import './db-url'
+import { PrismaClient } from '@prisma/client'
 
-export { prisma };
-export default prisma; 
+const globalForPrisma = global as unknown as {
+  prisma: PrismaClient | undefined
+}
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  })
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+
+export default prisma 

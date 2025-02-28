@@ -1,9 +1,7 @@
 // scripts/nile-setup.js
 const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
 
-console.log('Setting up Nile PostgreSQL database...');
+console.log('Setting up PostgreSQL database...');
 
 // Function to check if the DATABASE_URL contains the tenant parameter
 function checkDatabaseUrl() {
@@ -45,7 +43,7 @@ try {
   
   // Create the database schema
   console.log('Creating database schema...');
-  execSync('npx prisma db push --force-reset', { 
+  execSync('npx prisma db push', { 
     stdio: 'inherit',
     env: { ...process.env }
   });

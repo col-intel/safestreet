@@ -4,15 +4,11 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push && next build",
+    "build": "node scripts/add-tenant.js && prisma generate && prisma db push --force-reset && next build",
     "start": "next start",
     "lint": "next lint",
     "seed": "npx ts-node prisma/seed.ts",
     "postinstall": "prisma generate",
-    "setup:db": "node scripts/setup-db.js",
-    "setup:nile": "node scripts/nile-setup.js",
-    "migrate:dev": "node scripts/nile-migrate.js",
-    "migrate:deploy": "node scripts/nile-deploy.js",
     "test:connection": "node scripts/test-nile-connection.js"
   },
   "dependencies": {

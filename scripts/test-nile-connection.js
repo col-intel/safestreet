@@ -21,7 +21,7 @@ function ensureTenantParameter() {
 }
 
 async function testConnection() {
-  console.log('Testing Nile PostgreSQL connection...');
+  console.log('Testing PostgreSQL connection...');
   
   // Ensure the tenant parameter is present
   if (!ensureTenantParameter()) {
@@ -37,19 +37,6 @@ async function testConnection() {
     console.log('Connecting to database...');
     const result = await prisma.$queryRaw`SELECT 1 as test`;
     console.log('Connection successful!', result);
-    
-    // Check if the incidents table exists
-    console.log('Checking if incidents table exists...');
-    try {
-      const tables = await prisma.$queryRaw`
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema = 'public'
-      `;
-      console.log('Tables in database:', tables);
-    } catch (error) {
-      console.error('Error checking tables:', error.message);
-    }
     
     process.exit(0);
   } catch (error) {
