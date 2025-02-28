@@ -187,4 +187,48 @@ npx prisma migrate deploy
 
 ## Licença
 
-Este projeto está licenciado sob a licença MIT. 
+Este projeto está licenciado sob a licença MIT.
+
+## Database Setup with Nile PostgreSQL
+
+This project uses Nile PostgreSQL as the database provider, which is a PostgreSQL-compatible database platform specifically designed for B2B SaaS applications with built-in tenant isolation.
+
+### Setting up Nile PostgreSQL
+
+1. Connect Nile PostgreSQL to your Vercel project through the [Vercel Marketplace](https://vercel.com/marketplace/nile)
+2. Vercel will automatically add the `DATABASE_URL` environment variable to your project
+3. For local development, copy the connection string from your Vercel dashboard to your `.env.local` file
+
+### Initial Database Setup
+
+When setting up the project for the first time, you'll need to create and apply migrations:
+
+```bash
+npm run migrate:dev
+```
+
+This command will create and apply migrations based on your Prisma schema.
+
+### Seeding the Database
+
+To seed your database with initial data:
+
+```bash
+npm run seed
+```
+
+### Schema Changes
+
+When you make changes to your Prisma schema, you need to create a new migration:
+
+```bash
+npm run migrate:dev
+```
+
+To deploy migrations to your production database:
+
+```bash
+npm run migrate:deploy
+```
+
+For more detailed instructions, see the [NILE-SETUP.md](./NILE-SETUP.md) file. 

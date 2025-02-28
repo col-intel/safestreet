@@ -46,6 +46,5 @@
   ],
   "github": {
     "silent": true
-  },
-  "buildCommand": "npm run vercel-build"
+  }
 } 
