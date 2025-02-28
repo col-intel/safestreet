@@ -1,50 +1,107 @@
 const { PrismaClient } = require('@prisma/client');
 
-// Function to ensure the DATABASE_URL contains the tenant parameter
+// Ensure the DATABASE_URL has a tenant parameter
 function ensureTenantParameter() {
-  if (typeof process.env.DATABASE_URL !== 'string') {
-    console.error('DATABASE_URL environment variable is not set');
+  const dbUrl = process.env.DATABASE_URL;
+  
+  if (!dbUrl) {
+    console.error('❌ DATABASE_URL is not defined in environment variables');
     return false;
   }
-
-  // Check if the URL contains the tenant parameter
-  if (!process.env.DATABASE_URL.includes('tenant=')) {
-    console.log('Adding default tenant parameter to DATABASE_URL');
+  
+  console.log('🔍 Checking DATABASE_URL format...');
+  
+  // Check if tenant parameter exists
+  if (!dbUrl.includes('tenant=')) {
+    console.warn('⚠️ DATABASE_URL does not contain tenant parameter');
     
-    // Add the tenant parameter to the URL
-    process.env.DATABASE_URL = process.env.DATABASE_URL.includes('?') 
-      ? `${process.env.DATABASE_URL}&tenant=default` 
-      : `${process.env.DATABASE_URL}?tenant=default`;
+    // Add tenant parameter if missing
+    const updatedUrl = dbUrl.includes('?') 
+      ? `${dbUrl}&tenant=default` 
+      : `${dbUrl}?tenant=default`;
+    
+    process.env.DATABASE_URL = updatedUrl;
+    console.log('✅ Added tenant=default parameter to DATABASE_URL');
+  } else {
+    console.log('✅ DATABASE_URL already contains tenant parameter');
   }
-
+  
   return true;
 }
 
+// Test the database connection
 async function testConnection() {
-  console.log('Testing PostgreSQL connection...');
+  console.log('\n🔌 Testing Nile PostgreSQL connection...');
   
-  // Ensure the tenant parameter is present
   if (!ensureTenantParameter()) {
+    console.error('❌ Cannot proceed without valid DATABASE_URL');
     process.exit(1);
   }
-  
-  console.log('Using DATABASE_URL:', process.env.DATABASE_URL);
   
   const prisma = new PrismaClient();
   
   try {
-    // Test the connection by querying the database
-    console.log('Connecting to database...');
-    const result = await prisma.$queryRaw`SELECT 1 as test`;
-    console.log('Connection successful!', result);
+    console.log('🔄 Connecting to database...');
     
-    process.exit(0);
+    // Test a simple query
+    const result = await prisma.$queryRaw`SELECT 1 as test`;
+    console.log(`✅ Database connection successful: ${JSON.stringify(result)}`);
+    
+    // Check if incidents table exists
+    try {
+      console.log('🔍 Checking for incidents table...');
+      const tableExists = await prisma.$queryRaw`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'incidents'
+        );
+      `;
+      
+      if (tableExists[0].exists) {
+        console.log('✅ Incidents table exists');
+        
+        // Count incidents
+        const count = await prisma.incident.count();
+        console.log(`📊 Found ${count} incidents in the database`);
+      } else {
+        console.warn('⚠️ Incidents table does not exist yet');
+      }
+    } catch (tableError) {
+      console.warn('⚠️ Could not check for incidents table:', tableError.message);
+    }
+    
+    // Log connection details (without sensitive info)
+    const url = new URL(process.env.DATABASE_URL);
+    console.log(`\n📡 Connected to: ${url.host}${url.pathname}`);
+    console.log(`🔐 SSL Mode: ${url.searchParams.get('sslmode') || 'not specified'}`);
+    console.log(`👤 Tenant: ${url.searchParams.get('tenant') || 'not specified'}`);
+    
+    return true;
   } catch (error) {
-    console.error('Error connecting to database:', error.message);
-    process.exit(1);
+    console.error('❌ Database connection failed:', error.message);
+    if (error.meta) {
+      console.error('Error details:', error.meta);
+    }
+    return false;
   } finally {
     await prisma.$disconnect();
+    console.log('🔌 Database connection closed');
   }
 }
 
-testConnection(); 
+// Run the test
+testConnection()
+  .then(success => {
+    if (success) {
+      console.log('\n✅ Nile PostgreSQL connection test completed successfully');
+      process.exit(0);
+    } else {
+      console.error('\n❌ Nile PostgreSQL connection test failed');
+      process.exit(1);
+    }
+  })
+  .catch(error => {
+    console.error('\n❌ Unexpected error during connection test:', error);
+    process.exit(1);
+  }); 

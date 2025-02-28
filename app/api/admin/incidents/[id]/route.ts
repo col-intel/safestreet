@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 
+// Mark this route as explicitly dynamic since it uses headers
+export const dynamic = 'force-dynamic';
+
 // Basic Auth middleware
 function checkAuth(request: NextRequest) {
   const authHeader = headers().get('authorization');

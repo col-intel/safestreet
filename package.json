@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/add-tenant.js && prisma generate && node scripts/prisma-push.js && next build",
+    "build": "node scripts/pre-deploy.js && node scripts/add-tenant.js && prisma generate && node scripts/prisma-push.js && next build",
     "start": "next start",
     "lint": "next lint",
     "seed": "npx ts-node prisma/seed.ts",
     "postinstall": "prisma generate",
-    "test:connection": "node scripts/test-nile-connection.js"
+    "test:connection": "node scripts/test-nile-connection.js",
+    "pre-deploy": "node scripts/pre-deploy.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
