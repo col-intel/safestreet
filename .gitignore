@@ -1,26 +1,49 @@
-# Logs
-logs
-*.log
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# local env files
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# database
+*.sqlite
+*.sqlite3
+
+# Logs
+logs
+*.log
 pnpm-debug.log*
 lerna-debug.log*
-
-# Dependencies
-node_modules
-.pnp
-.pnp.js
-
-# Build outputs
-dist
-dist-ssr
-*.local
-build
-
-# Testing
-coverage
-.nyc_output
 
 # Editor directories and files
 .vscode/*
@@ -38,14 +61,33 @@ coverage
 
 # Environment variables
 .env
-.env.local
 .env.development.local
 .env.test.local
 .env.production
 .env.production.local
 
-# TypeScript
-*.tsbuildinfo
+# Cache
+.cache
+.eslintcache
+.stylelintcache
+
+# Temporary files
+*.tmp
+*.temp
+.temp
+.tmp
+
+# Misc
+Thumbs.db
+
+# Build outputs
+dist
+dist-ssr
+*.local
+build
+
+# Testing
+.nyc_output
 
 # Vite
 .vite/
