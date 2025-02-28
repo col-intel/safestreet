@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { submitIncident } from '@/lib/api';
 import { Freguesia, Severity, severityLabels } from '@/types';
+import { useRouter } from 'next/navigation';
 
 // Sample data for freguesias
 const freguesias: Freguesia[] = [
@@ -41,7 +42,6 @@ const incidentTypes = [
 export default function ReportPage() {
   const [formData, setFormData] = useState({
     date: '',
-    time: '',
     location: '',
     freguesia: '',
     description: '',
@@ -49,30 +49,66 @@ export default function ReportPage() {
     severity: '' as Severity,
     reporterName: '',
     email: '',
-    subscribeToUpdates: false
+    subscribeToUpdates: false,
+    formattedDate: ''
   });
   
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   
+  const router = useRouter();
+  
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+  
+  // Function to format date to dd/mm/yyyy
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+  
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputDate = e.target.value; // This is in YYYY-MM-DD format from the input
+    
+    // Store the original date format for the input field
+    setFormData(prev => ({
+      ...prev,
+      date: inputDate,
+      // Format the date for submission in DD/MM/YYYY format
+      formattedDate: formatDate(inputDate)
+    }));
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-    setSuccess(null);
-    
+    setError('');
+    setSuccess('');
+
     try {
-      const result = await submitIncident(formData);
-      setSuccess(result.message);
+      // Use the formatted date for submission
+      const response = await submitIncident({
+        ...formData,
+        date: formData.formattedDate || formData.date, // Use formatted date if available
+      });
+
+      if (response.id) {
+        setSuccess('Incidente reportado com sucesso!');
+        // Redirect to success page
+        router.push(`/reportar/sucesso?id=${response.id}`);
+      } else {
+        setError('Ocorreu um erro ao submeter o incidente. Por favor, tente novamente.');
+      }
+
       // Reset form
       setFormData({
         date: '',
-        time: '',
         location: '',
         freguesia: '',
         description: '',
@@ -80,7 +116,8 @@ export default function ReportPage() {
         severity: '' as Severity,
         reporterName: '',
         email: '',
-        subscribeToUpdates: false
+        subscribeToUpdates: false,
+        formattedDate: ''
       });
     } catch (err) {
       setError('Ocorreu um erro ao submeter o incidente. Por favor, tente novamente.');
@@ -91,7 +128,7 @@ export default function ReportPage() {
   };
   
   return (
-    <div className="container mx-auto max-w-2xl py-8 px-4">
+    <div className="container mx-auto max-w-4xl py-8 px-4">
       <h1 className="text-3xl font-bold mb-6">Reportar Incidente</h1>
       
       <p className="text-muted-foreground mb-8">
@@ -112,28 +149,18 @@ export default function ReportPage() {
       )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="date">Data do Incidente</Label>
-            <Input
-              id="date"
-              type="date"
-              required
-              value={formData.date}
-              onChange={(e) => handleChange('date', e.target.value)}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="time">Hora do Incidente</Label>
-            <Input
-              id="time"
-              type="time"
-              required
-              value={formData.time}
-              onChange={(e) => handleChange('time', e.target.value)}
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="date">Data do Incidente</Label>
+          <Input
+            id="date"
+            type="date"
+            required
+            value={formData.date}
+            onChange={handleDateChange}
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Formato: DD/MM/AAAA
+          </p>
         </div>
         
         <div className="space-y-2">
@@ -236,6 +263,9 @@ export default function ReportPage() {
             value={formData.email}
             onChange={(e) => handleChange('email', e.target.value)}
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            Todas as informações são encriptadas. Utilizaremos o seu email apenas para enviar atualizações sobre o progresso do incidente.
+          </p>
         </div>
         
         <div className="flex items-center space-x-2">

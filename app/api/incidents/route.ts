@@ -33,11 +33,11 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { 
-      date, time, location, freguesia, description, type, severity, reporterName, email, subscribeToUpdates 
+      date, location, freguesia, description, type, severity, reporterName, email, subscribeToUpdates 
     } = body;
     
     // Validate required fields
-    if (!date || !time || !location || !freguesia || !description || !type || !severity || !reporterName) {
+    if (!date || !location || !freguesia || !description || !type || !severity || !reporterName) {
       return NextResponse.json(
         { error: 'All fields are required' },
         { status: 400 }
@@ -48,7 +48,6 @@ export async function POST(request: NextRequest) {
       data: {
         id: uuidv4(),
         date,
-        time,
         location,
         freguesia,
         description,

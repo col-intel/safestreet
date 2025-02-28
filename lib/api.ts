@@ -18,6 +18,20 @@ export const getApprovedIncidents = async (): Promise<Incident[]> => {
   }
 };
 
+// Fetch incidents by status (for admin page)
+export const fetchIncidents = async (status: 'pending' | 'approved' | 'rejected'): Promise<Incident[]> => {
+  try {
+    const response = await fetch(`/api/incidents?status=${status}`);
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching ${status} incidents:`, error);
+    throw error;
+  }
+};
+
 // Submit a new incident
 export const submitIncident = async (incident: IncidentSubmission): Promise<{ id: string; message: string }> => {
   try {
@@ -80,6 +94,20 @@ export const updateIncidentStatus = async (id: string, status: 'pending' | 'appr
     return await response.json();
   } catch (error) {
     console.error('Error updating incident status:', error);
+    throw error;
+  }
+};
+
+// Get a single incident by ID
+export const getIncidentById = async (id: string): Promise<Incident> => {
+  try {
+    const response = await fetch(`/api/incidents/${id}`);
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching incident:', error);
     throw error;
   }
 }; 

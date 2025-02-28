@@ -5,7 +5,6 @@ export type Freguesia = string
 export type Incident = {
   id: string
   date: string
-  time: string
   location: string
   freguesia: Freguesia
   description: string

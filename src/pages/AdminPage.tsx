@@ -165,7 +165,7 @@ export function AdminPage() {
                     <CardContent>
                       <div className="grid gap-2">
                         <div className="text-sm text-muted-foreground">
-                          {new Date(incident.date).toLocaleDateString('pt-PT')} às {incident.time}
+                          {new Date(incident.date).toLocaleDateString('pt-PT')}
                         </div>
                         <div className="text-sm">{incident.description}</div>
                         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">

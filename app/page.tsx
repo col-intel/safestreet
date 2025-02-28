@@ -81,6 +81,11 @@ export default function HomePage() {
         <p className="text-lg text-muted-foreground max-w-[700px]">
           Acompanhe e reporte incidentes de segurança no Porto. Juntos podemos tornar a nossa cidade mais segura.
         </p>
+        <div className="mt-6">
+          <Button asChild size="lg">
+            <a href="/reportar">Reportar Novo Incidente</a>
+          </Button>
+        </div>
       </div>
 
       <Alert className="mb-8">
@@ -113,7 +118,7 @@ export default function HomePage() {
             </SelectContent>
           </Select>
           <Select value={selectedSeverity} onValueChange={setSelectedSeverity}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[220px]">
               <SelectValue placeholder="Severidade" />
             </SelectTrigger>
             <SelectContent>
@@ -143,12 +148,6 @@ export default function HomePage() {
       ) : (
         <IncidentList incidents={filteredIncidents} />
       )}
-
-      <div className="mt-8 text-center">
-        <Button asChild size="lg">
-          <a href="/reportar">Reportar Novo Incidente</a>
-        </Button>
-      </div>
     </>
   );
 } 

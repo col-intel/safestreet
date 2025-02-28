@@ -22,6 +22,7 @@ function checkAuth(request: NextRequest) {
   return username === validUsername && password === validPassword;
 }
 
+// Update incident status
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -38,22 +39,26 @@ export async function PUT(
     }
     
     const { id } = params;
-    const body = await request.json();
-    const { status } = body;
-    
+    const { status } = await request.json();
+
+    // Validate status
     if (!['pending', 'approved', 'rejected'].includes(status)) {
       return NextResponse.json(
-        { error: 'Invalid status' },
+        { error: 'Invalid status. Must be pending, approved, or rejected.' },
         { status: 400 }
       );
     }
-    
-    await prisma.incident.update({
+
+    // Update incident status
+    const updatedIncident = await prisma.incident.update({
       where: { id },
-      data: { status }
+      data: { status },
     });
-    
-    return NextResponse.json({ message: 'Incident status updated successfully' });
+
+    return NextResponse.json({
+      message: `Incident status updated to ${status}`,
+      incident: updatedIncident,
+    });
   } catch (error) {
     console.error('Error updating incident status:', error);
     return NextResponse.json(
