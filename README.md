@@ -61,7 +61,7 @@ This project is built with:
 
 ## Deployment to Vercel
 
-This application is configured for deployment on Vercel with Postgres database. Follow these steps to deploy:
+This application is configured for deployment on Vercel with Neon Postgres database. Follow these steps to deploy:
 
 1. Push your code to a GitHub repository
 
@@ -75,12 +75,14 @@ This application is configured for deployment on Vercel with Postgres database. 
    - Vercel should automatically detect the project as a Vite + Node.js application
    - The build settings should be automatically configured based on the `vercel.json` file
 
-4. Set up Vercel Postgres:
-   - In the Vercel dashboard, go to the "Storage" tab
-   - Click "Create" and select "Postgres"
-   - Follow the steps to create a new Postgres database
-   - Connect the database to your project
-   - Vercel will automatically add the required environment variables to your project
+4. Set up Neon Postgres:
+   - Sign up for a free account at [Neon](https://neon.tech)
+   - Create a new project
+   - Create a new database
+   - Get your connection string from the Neon dashboard
+   - In the Vercel dashboard, go to your project settings
+   - Navigate to the "Environment Variables" tab
+   - Add the connection string as `POSTGRES_URL`
 
 5. Set up additional environment variables:
    - In the Vercel dashboard, go to your project settings
@@ -100,8 +102,8 @@ This application is configured for deployment on Vercel with Postgres database. 
    - Vercel will build and deploy your application
 
 7. Migrate existing data (optional):
-   - If you have existing data in your local SQLite database that you want to migrate to Vercel Postgres:
-   - Get your Postgres connection string from the Vercel dashboard (Storage → Your Database → .env.local tab)
+   - If you have existing data in your local SQLite database that you want to migrate to Neon Postgres:
+   - Get your Postgres connection string from the Neon dashboard
    - Create a `.env.production` file locally with the Postgres connection string:
      ```
      NODE_ENV=production
@@ -111,7 +113,7 @@ This application is configured for deployment on Vercel with Postgres database. 
      ```
      node migrate-data.js
      ```
-   - This will copy all incidents from your local SQLite database to Vercel Postgres
+   - This will copy all incidents from your local SQLite database to Neon Postgres
    - Note: The `.env.production` file is in `.gitignore` to prevent sensitive information from being committed
 
 8. Custom Domain (Optional):

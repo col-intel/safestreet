@@ -12,13 +12,11 @@ console.log('=== COMPREHENSIVE DATABASE CONNECTION CHECK ===');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('Date/Time:', new Date().toISOString());
 
-// Check DNS resolution for Supabase pooler
+// Check DNS resolution for database hosts
 console.log('\n=== DNS CHECKS ===');
 const hostsToCheck = [
-  'api.pooler.supabase.com',
-  'db.supabase.com',
-  'db.supabase.io',
-  'db.neon.tech'
+  'db.neon.tech',
+  'console.neon.tech'
 ];
 
 // Function to check DNS resolution

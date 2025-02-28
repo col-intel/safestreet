@@ -13,16 +13,12 @@ export async function initializeDirectDb() {
     pgPool = new pg.Pool({
       connectionString,
       ssl: {
-        // More permissive SSL configuration
-        rejectUnauthorized: false,
-        // Don't check hostname in certificate
-        checkServerIdentity: () => undefined
+        rejectUnauthorized: false
       },
-      // Add connection timeout and retry options
-      connectionTimeoutMillis: 10000, // Increased timeout
-      query_timeout: 15000, // Increased timeout
-      statement_timeout: 15000, // Increased timeout
-      idle_in_transaction_session_timeout: 15000 // Increased timeout
+      // Connection pool configuration
+      max: 10, // Maximum number of clients in the pool
+      idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
+      connectionTimeoutMillis: 10000, // How long to wait for a connection to become available
     });
     
     // Test the connection

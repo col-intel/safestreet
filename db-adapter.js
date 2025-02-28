@@ -4,7 +4,7 @@ import { sql } from '@vercel/postgres';
 import pg from 'pg';
 import * as directDb from './direct-db.js';
 
-// Database adapter that uses SQLite in development and Vercel Postgres in production
+// Database adapter that uses SQLite in development and Neon Postgres in production
 let db;
 let pgPool;
 let directDbInitialized = false;
@@ -13,7 +13,7 @@ export async function initializeDatabase() {
   const isProduction = process.env.NODE_ENV === 'production';
   
   if (isProduction) {
-    // Use Vercel Postgres in production
+    // Use Neon Postgres in production
     try {
       // For direct SQL queries using @vercel/postgres
       try {
@@ -32,15 +32,12 @@ export async function initializeDatabase() {
       pgPool = new pg.Pool({
         connectionString,
         ssl: {
-          rejectUnauthorized: false,
-          // Don't check hostname in certificate
-          checkServerIdentity: () => undefined
+          rejectUnauthorized: false
         },
-        // Add connection timeout and retry options
-        connectionTimeoutMillis: 10000, // Increased timeout
-        query_timeout: 15000, // Increased timeout
-        statement_timeout: 15000, // Increased timeout
-        idle_in_transaction_session_timeout: 15000 // Increased timeout
+        // Connection pool configuration
+        max: 10, // Maximum number of clients in the pool
+        idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
+        connectionTimeoutMillis: 10000, // How long to wait for a connection to become available
       });
       
       // Test the connection
@@ -98,7 +95,7 @@ export async function initializeDatabase() {
           severity TEXT NOT NULL,
           reporterName TEXT NOT NULL,
           status TEXT DEFAULT 'pending',
-          createdAt TEXT NOT NULL
+          createdAt TEXT DEFAULT CURRENT_TIMESTAMP
         )
       `);
       
@@ -125,12 +122,12 @@ async function createTablesInPostgres() {
       severity TEXT NOT NULL,
       "reporterName" TEXT NOT NULL,
       status TEXT DEFAULT 'pending',
-      "createdAt" TEXT NOT NULL
+      "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `;
 }
 
-// Add a retry mechanism for database operations
+// Helper function to retry operations
 async function withRetry(operation, maxRetries = 3, delay = 1000) {
   let lastError;
   
@@ -138,7 +135,7 @@ async function withRetry(operation, maxRetries = 3, delay = 1000) {
     try {
       return await operation();
     } catch (error) {
-      console.error(`Attempt ${attempt}/${maxRetries} failed:`, error.message);
+      console.error(`Operation failed (attempt ${attempt}/${maxRetries}):`, error.message);
       lastError = error;
       
       if (attempt < maxRetries) {

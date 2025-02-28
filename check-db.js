@@ -9,9 +9,9 @@ dotenv.config({ path: '.env.production' });
 console.log('Checking database connection...');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 
-// Check DNS resolution for Supabase pooler
-dns.lookup('api.pooler.supabase.com', (err, address, family) => {
-  console.log('DNS lookup for api.pooler.supabase.com:');
+// Check DNS resolution for Neon
+dns.lookup('db.neon.tech', (err, address, family) => {
+  console.log('DNS lookup for db.neon.tech:');
   if (err) {
     console.error('DNS lookup error:', err);
   } else {

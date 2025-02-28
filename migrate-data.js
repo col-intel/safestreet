@@ -1,4 +1,4 @@
-// Script to migrate data from SQLite to Postgres
+// Script to migrate data from SQLite to Neon Postgres
 // Usage: NODE_ENV=production POSTGRES_URL=your_postgres_url node migrate-data.js
 
 import { open } from 'sqlite';
@@ -10,7 +10,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.production' });
 
 async function migrateData() {
-  console.log('Starting migration from SQLite to Postgres...');
+  console.log('Starting migration from SQLite to Neon Postgres...');
   
   // Check if we're in production mode
   if (process.env.NODE_ENV !== 'production') {
@@ -33,7 +33,7 @@ async function migrateData() {
     });
     
     // Create table in Postgres if it doesn't exist
-    console.log('Creating table in Postgres if it doesn\'t exist...');
+    console.log('Creating table in Neon Postgres if it doesn\'t exist...');
     await sql`
       CREATE TABLE IF NOT EXISTS incidents (
         id TEXT PRIMARY KEY,
@@ -46,7 +46,7 @@ async function migrateData() {
         severity TEXT NOT NULL,
         "reporterName" TEXT NOT NULL,
         status TEXT DEFAULT 'pending',
-        "createdAt" TEXT NOT NULL
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
     
@@ -57,13 +57,16 @@ async function migrateData() {
     
     // Insert incidents into Postgres
     if (incidents.length > 0) {
-      console.log('Migrating incidents to Postgres...');
+      console.log('Migrating incidents to Neon Postgres...');
       
       for (const incident of incidents) {
         // Check if incident already exists in Postgres
         const existingIncident = await sql`SELECT id FROM incidents WHERE id = ${incident.id}`;
         
         if (existingIncident.rows.length === 0) {
+          // Ensure createdAt is a valid timestamp
+          const createdAt = incident.createdAt || new Date().toISOString();
+          
           // Insert incident into Postgres
           await sql`
             INSERT INTO incidents (
@@ -79,7 +82,7 @@ async function migrateData() {
               ${incident.severity}, 
               ${incident.reporterName}, 
               ${incident.status}, 
-              ${incident.createdAt}
+              ${createdAt}
             )
           `;
           console.log(`Migrated incident ${incident.id}`);

@@ -17,15 +17,14 @@ import {
 
 // Configure global HTTPS agent to handle SSL certificate issues
 const httpsAgent = new https.Agent({
-  rejectUnauthorized: false,
-  checkServerIdentity: () => undefined
+  rejectUnauthorized: false
 });
 
 // Apply the agent to global fetch if available
 if (typeof global.fetch !== 'undefined') {
   const originalFetch = global.fetch;
   global.fetch = function(url, options = {}) {
-    if (url.toString().includes('supabase') || url.toString().includes('neon.tech')) {
+    if (url.toString().includes('neon.tech')) {
       options.agent = httpsAgent;
     }
     return originalFetch(url, options);
