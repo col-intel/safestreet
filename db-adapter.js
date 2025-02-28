@@ -3,17 +3,17 @@ import sqlite3 from 'sqlite3';
 import { sql } from '@vercel/postgres';
 import pg from 'pg';
 
-// Database adapter that uses SQLite in development and Vercel Postgres in production
+// Database adapter that uses PostgreSQL in both development and production
 let db;
 let pgPool;
 
 export async function initializeDatabase() {
   const isProduction = process.env.NODE_ENV === 'production';
   
-  if (isProduction) {
-    // Use Vercel Postgres in production
-    try {
-      // For direct SQL queries using @vercel/postgres
+  try {
+    // For direct SQL queries using @vercel/postgres in production
+    // or pg Pool in development
+    if (isProduction) {
       await createTablesInPostgres();
       
       // For more complex queries, we'll use the pg Pool
@@ -25,41 +25,22 @@ export async function initializeDatabase() {
       });
       
       console.log('PostgreSQL database initialized in production');
-      return true;
-    } catch (error) {
-      console.error('Failed to initialize Postgres database:', error);
-      throw error;
-    }
-  } else {
-    // Use SQLite in development
-    try {
-      db = await open({
-        filename: './database.sqlite',
-        driver: sqlite3.Database
+    } else {
+      // Use PostgreSQL in development too
+      pgPool = new pg.Pool({
+        connectionString: process.env.DEV_POSTGRES_URL || 'postgresql://postgres:postgres@localhost:5432/safestreet',
+        ssl: process.env.DEV_POSTGRES_SSL === 'true' ? {
+          rejectUnauthorized: false
+        } : false
       });
       
-      await db.exec(`
-        CREATE TABLE IF NOT EXISTS incidents (
-          id TEXT PRIMARY KEY,
-          date TEXT NOT NULL,
-          time TEXT NOT NULL,
-          location TEXT NOT NULL,
-          freguesia TEXT NOT NULL,
-          description TEXT NOT NULL,
-          type TEXT NOT NULL,
-          severity TEXT NOT NULL,
-          reporterName TEXT NOT NULL,
-          status TEXT DEFAULT 'pending',
-          createdAt TEXT NOT NULL
-        )
-      `);
-      
-      console.log('SQLite database initialized in development');
-      return true;
-    } catch (error) {
-      console.error('Failed to initialize SQLite database:', error);
-      throw error;
+      await createTablesInPostgres();
+      console.log('PostgreSQL database initialized in development');
     }
+    return true;
+  } catch (error) {
+    console.error('Failed to initialize Postgres database:', error);
+    throw error;
   }
 }
 
@@ -82,92 +63,136 @@ async function createTablesInPostgres() {
   `;
 }
 
-// Database operations
-export async function getAllIncidents() {
-  if (process.env.NODE_ENV === 'production') {
-    const result = await sql`SELECT * FROM incidents ORDER BY date DESC, time DESC`;
-    return result.rows;
+export function getDb() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  if (isProduction) {
+    // In production, we use the sql function from @vercel/postgres for simple queries
+    // and pgPool for more complex operations
+    return { sql, pgPool };
   } else {
-    return await db.all('SELECT * FROM incidents ORDER BY date DESC, time DESC');
+    // In development, we use pgPool for all operations
+    return { pgPool };
+  }
+}
+
+export async function getAllIncidents() {
+  const { sql, pgPool } = getDb();
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  try {
+    if (isProduction) {
+      const result = await sql`SELECT * FROM incidents ORDER BY "createdAt" DESC`;
+      return result.rows;
+    } else {
+      const result = await pgPool.query('SELECT * FROM incidents ORDER BY "createdAt" DESC');
+      return result.rows;
+    }
+  } catch (error) {
+    console.error('Error fetching incidents:', error);
+    throw error;
   }
 }
 
 export async function getIncidentsByStatus(status) {
-  if (process.env.NODE_ENV === 'production') {
-    const result = await sql`SELECT * FROM incidents WHERE status = ${status} ORDER BY date DESC, time DESC`;
-    return result.rows;
-  } else {
-    return await db.all('SELECT * FROM incidents WHERE status = ? ORDER BY date DESC, time DESC', status);
+  const { sql, pgPool } = getDb();
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  try {
+    if (isProduction) {
+      const result = await sql`SELECT * FROM incidents WHERE status = ${status} ORDER BY "createdAt" DESC`;
+      return result.rows;
+    } else {
+      const result = await pgPool.query('SELECT * FROM incidents WHERE status = $1 ORDER BY "createdAt" DESC', [status]);
+      return result.rows;
+    }
+  } catch (error) {
+    console.error(`Error fetching incidents with status ${status}:`, error);
+    throw error;
   }
 }
 
 export async function createIncident(incident) {
-  const { id, date, time, location, freguesia, description, type, severity, reporterName, status, createdAt } = incident;
+  const { sql, pgPool } = getDb();
+  const isProduction = process.env.NODE_ENV === 'production';
   
-  if (process.env.NODE_ENV === 'production') {
-    await sql`
-      INSERT INTO incidents (id, date, time, location, freguesia, description, type, severity, "reporterName", status, "createdAt") 
-      VALUES (${id}, ${date}, ${time}, ${location}, ${freguesia}, ${description}, ${type}, ${severity}, ${reporterName}, ${status}, ${createdAt})
-    `;
-    return { id };
-  } else {
-    await db.run(
-      'INSERT INTO incidents (id, date, time, location, freguesia, description, type, severity, reporterName, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, date, time, location, freguesia, description, type, severity, reporterName, status, createdAt]
-    );
-    return { id };
+  try {
+    if (isProduction) {
+      await sql`
+        INSERT INTO incidents (
+          id, date, time, location, freguesia, description, type, severity, "reporterName", status, "createdAt"
+        ) VALUES (
+          ${incident.id}, 
+          ${incident.date}, 
+          ${incident.time}, 
+          ${incident.location}, 
+          ${incident.freguesia}, 
+          ${incident.description}, 
+          ${incident.type}, 
+          ${incident.severity}, 
+          ${incident.reporterName}, 
+          ${incident.status || 'pending'}, 
+          ${incident.createdAt}
+        )
+      `;
+    } else {
+      await pgPool.query(`
+        INSERT INTO incidents (
+          id, date, time, location, freguesia, description, type, severity, "reporterName", status, "createdAt"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `, [
+        incident.id, 
+        incident.date, 
+        incident.time, 
+        incident.location, 
+        incident.freguesia, 
+        incident.description, 
+        incident.type, 
+        incident.severity, 
+        incident.reporterName, 
+        incident.status || 'pending', 
+        incident.createdAt
+      ]);
+    }
+    return { success: true, id: incident.id };
+  } catch (error) {
+    console.error('Error creating incident:', error);
+    throw error;
   }
 }
 
 export async function updateIncidentStatus(id, status) {
-  if (process.env.NODE_ENV === 'production') {
-    await sql`UPDATE incidents SET status = ${status} WHERE id = ${id}`;
-  } else {
-    await db.run('UPDATE incidents SET status = ? WHERE id = ?', [status, id]);
+  const { sql, pgPool } = getDb();
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  try {
+    if (isProduction) {
+      await sql`UPDATE incidents SET status = ${status} WHERE id = ${id}`;
+    } else {
+      await pgPool.query('UPDATE incidents SET status = $1 WHERE id = $2', [status, id]);
+    }
+    return { success: true };
+  } catch (error) {
+    console.error(`Error updating incident ${id} status:`, error);
+    throw error;
   }
-  return { success: true };
 }
 
 export async function getAdminIncidents() {
-  if (process.env.NODE_ENV === 'production') {
-    const result = await sql`SELECT * FROM incidents ORDER BY "createdAt" DESC`;
-    return result.rows;
-  } else {
-    return await db.all('SELECT * FROM incidents ORDER BY createdAt DESC');
-  }
-}
-
-// Legacy function for backward compatibility
-export function getDb() {
-  if (process.env.NODE_ENV === 'production') {
-    console.warn('Direct database access is not recommended in production. Use the provided functions instead.');
-    return {
-      all: async (query, ...params) => {
-        console.warn('Using legacy db.all() in production. Consider updating to use the provided functions.');
-        if (query.includes('WHERE status =')) {
-          const status = params[0];
-          return getIncidentsByStatus(status);
-        } else if (query.includes('ORDER BY createdAt DESC')) {
-          return getAdminIncidents();
-        } else {
-          return getAllIncidents();
-        }
-      },
-      run: async (query, params) => {
-        console.warn('Using legacy db.run() in production. Consider updating to use the provided functions.');
-        if (query.includes('UPDATE incidents SET status =')) {
-          const [status, id] = params;
-          return updateIncidentStatus(id, status);
-        } else if (query.includes('INSERT INTO incidents')) {
-          const [id, date, time, location, freguesia, description, type, severity, reporterName, status, createdAt] = params;
-          return createIncident({
-            id, date, time, location, freguesia, description, type, severity, reporterName, status, createdAt
-          });
-        }
-      }
-    };
-  } else {
-    return db;
+  const { sql, pgPool } = getDb();
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  try {
+    if (isProduction) {
+      const result = await sql`SELECT * FROM incidents ORDER BY "createdAt" DESC`;
+      return result.rows;
+    } else {
+      const result = await pgPool.query('SELECT * FROM incidents ORDER BY "createdAt" DESC');
+      return result.rows;
+    }
+  } catch (error) {
+    console.error('Error fetching admin incidents:', error);
+    throw error;
   }
 }
 

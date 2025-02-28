@@ -61,60 +61,90 @@ This project is built with:
 
 ## Deployment to Vercel
 
-This application is configured for deployment on Vercel with Postgres database. Follow these steps to deploy:
+This application is configured to be deployed on Vercel with support for the custom domain www.ruasegura.pt.
 
-1. Push your code to a GitHub repository
+### Prerequisites
 
-2. Connect your GitHub repository to Vercel:
-   - Sign up or log in to [Vercel](https://vercel.com)
-   - Click "New Project"
-   - Import your GitHub repository
-   - Select the repository you want to deploy
+1. A Vercel account
+2. A PostgreSQL database (Vercel Postgres, Neon, Supabase, etc.)
+3. Domain ownership of ruasegura.pt
 
-3. Configure the project:
-   - Vercel should automatically detect the project as a Vite + Node.js application
-   - The build settings should be automatically configured based on the `vercel.json` file
+### Deployment Steps
 
-4. Set up Vercel Postgres:
-   - In the Vercel dashboard, go to the "Storage" tab
-   - Click "Create" and select "Postgres"
-   - Follow the steps to create a new Postgres database
-   - Connect the database to your project
-   - Vercel will automatically add the required environment variables to your project
+1. **Connect your GitHub repository to Vercel**:
+   - Go to [Vercel](https://vercel.com) and sign in
+   - Click "Add New" > "Project"
+   - Select your repository and click "Import"
 
-5. Set up additional environment variables:
-   - In the Vercel dashboard, go to your project settings
-   - Navigate to the "Environment Variables" tab
-   - Add the following environment variables:
+2. **Configure environment variables**:
+   - In the Vercel project settings, go to "Environment Variables"
+   - Add the following variables:
      ```
+     ADMIN_USERNAME=admin
+     ADMIN_PASSWORD=your_secure_password
+     VITE_ADMIN_EMAIL=your_admin_email
+     VITE_ADMIN_PASSWORD=your_secure_admin_password
      NODE_ENV=production
-     ADMIN_USERNAME=your-admin-username
-     ADMIN_PASSWORD=your-secure-admin-password
-     VITE_ADMIN_EMAIL=your-admin-email
-     VITE_ADMIN_PASSWORD=your-admin-password
      ```
-   - Make sure to use secure values for the passwords
+   - The PostgreSQL connection variables will be automatically added if you use Vercel Postgres
 
-6. Deploy the application:
-   - Click "Deploy"
-   - Vercel will build and deploy your application
+3. **Set up the custom domain**:
+   - In your Vercel project, go to "Settings" > "Domains"
+   - Add your domain: www.ruasegura.pt
+   - Follow Vercel's instructions to configure your DNS settings
+   - Optionally, add the apex domain (ruasegura.pt) and configure a redirect to www.ruasegura.pt
 
-7. Migrate existing data (optional):
-   - If you have existing data in your local SQLite database that you want to migrate to Vercel Postgres:
-   - Get your Postgres connection string from the Vercel dashboard (Storage → Your Database → .env.local tab)
-   - Create a `.env.production` file locally with the Postgres connection string:
-     ```
-     NODE_ENV=production
-     POSTGRES_URL=your_postgres_connection_string
-     ```
-   - Run the migration script:
-     ```
-     node migrate-data.js
-     ```
-   - This will copy all incidents from your local SQLite database to Vercel Postgres
-   - Note: The `.env.production` file is in `.gitignore` to prevent sensitive information from being committed
+4. **Deploy your application**:
+   - Vercel will automatically deploy your application when you push to your repository
+   - You can also manually trigger a deployment from the Vercel dashboard
 
-8. Custom Domain (Optional):
-   - In the Vercel dashboard, go to your project settings
-   - Navigate to the "Domains" tab
-   - Add your custom domain and follow the instructions to configure DNS settings 
+### Local Development with PostgreSQL
+
+The application is now configured to use PostgreSQL in both development and production environments.
+
+1. **Set up a local PostgreSQL database**:
+   - Install PostgreSQL on your machine or use a Docker container
+   - Create a database named `safestreet`
+
+2. **Configure your local environment**:
+   - Update the `.env` file with your PostgreSQL connection details:
+     ```
+     DEV_POSTGRES_URL=postgresql://postgres:your_password@localhost:5432/safestreet
+     DEV_POSTGRES_SSL=false
+     ```
+
+3. **Run the application**:
+   ```
+   npm install
+   npm run dev
+   ```
+
+## Features
+
+- Report street incidents
+- Admin dashboard to manage incidents
+- Responsive design
+- Secure authentication
+
+## Migration from SQLite to PostgreSQL
+
+If you have existing data in your local SQLite database that you want to migrate to Vercel Postgres, follow these steps:
+
+1. Get your Postgres connection string from the Vercel dashboard (Storage → Your Database → .env.local tab)
+2. Create a `.env.production` file locally with the Postgres connection string:
+   ```
+   NODE_ENV=production
+   POSTGRES_URL=your_postgres_connection_string
+   ```
+3. Run the migration script:
+   ```
+   node migrate-data.js
+   ```
+4. This will copy all incidents from your local SQLite database to Vercel Postgres
+5. Note: The `.env.production` file is in `.gitignore` to prevent sensitive information from being committed
+
+## Custom Domain (Optional)
+
+In the Vercel dashboard, go to your project settings
+Navigate to the "Domains" tab
+Add your custom domain and follow the instructions to configure DNS settings 

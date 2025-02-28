@@ -13,6 +13,7 @@ import {
   updateIncidentStatus, 
   getAdminIncidents 
 } from './db-adapter.js';
+import helmet from 'helmet';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,8 +22,17 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://www.ruasegura.pt', 'https://ruasegura.pt', 'https://safe-street.vercel.app'] 
+    : 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
+app.use(helmet()); // Add security headers
 
 // Basic Auth Middleware
 const adminAuth = (req, res, next) => {
