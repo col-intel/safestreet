@@ -4,10 +4,13 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "npx ts-node prisma/seed.ts"
+    "seed": "npx ts-node prisma/seed.ts",
+    "postinstall": "prisma generate",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate": "node scripts/migrate.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
