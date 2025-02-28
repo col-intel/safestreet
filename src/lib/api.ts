@@ -1,7 +1,10 @@
 import axios from 'axios';
 import { Incident } from '@/types';
 
-const API_URL = 'http://localhost:3001/api';
+// Determine the API URL based on the environment
+const API_URL = import.meta.env.PROD 
+  ? '/api'  // In production, use relative URL (same domain)
+  : 'http://localhost:3001/api';  // In development, use localhost
 
 // Type for incident submission
 export type IncidentSubmission = Omit<Incident, 'id' | 'status'>;
