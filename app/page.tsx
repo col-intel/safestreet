@@ -14,17 +14,13 @@ import { Card, CardContent } from '@/components/ui/card';
 
 // Sample data for freguesias
 const freguesias: Freguesia[] = [
+  "Aldoar, Foz do Douro e Nevogilde",
   "Bonfim",
   "Campanhã",
-  "Cedofeita",
-  "Lordelo do Ouro",
-  "Massarelos",
+  "Cedofeita, Santo Ildefonso, Sé, Miragaia, São Nicolau e Vitória",
+  "Lordelo do Ouro e Massarelos",
   "Paranhos",
-  "Ramalde",
-  "Santo Ildefonso",
-  "São Nicolau",
-  "Sé",
-  "Vitória",
+  "Ramalde"
 ];
 
 // Severity colors for badges
