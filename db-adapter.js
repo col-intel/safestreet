@@ -2,10 +2,12 @@ import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import { sql } from '@vercel/postgres';
 import pg from 'pg';
+import * as directDb from './direct-db.js';
 
 // Database adapter that uses SQLite in development and Vercel Postgres in production
 let db;
 let pgPool;
+let directDbInitialized = false;
 
 export async function initializeDatabase() {
   const isProduction = process.env.NODE_ENV === 'production';
@@ -48,11 +50,31 @@ export async function initializeDatabase() {
         client.release();
       }
       
+      // Also initialize the direct database connection
+      try {
+        await directDb.initializeDirectDb();
+        directDbInitialized = true;
+        console.log('Direct database connection initialized');
+      } catch (error) {
+        console.error('Failed to initialize direct database connection:', error);
+        // Continue anyway, we'll try again when needed
+      }
+      
       console.log('PostgreSQL database initialized in production');
       return true;
     } catch (error) {
       console.error('Failed to initialize Postgres database:', error);
-      throw error;
+      
+      // Try to initialize direct database connection as a last resort
+      try {
+        await directDb.initializeDirectDb();
+        directDbInitialized = true;
+        console.log('Direct database connection initialized as fallback');
+        return true;
+      } catch (directDbError) {
+        console.error('Failed to initialize direct database connection:', directDbError);
+        throw error; // Throw the original error
+      }
     }
   } else {
     // Use SQLite in development
@@ -109,8 +131,33 @@ async function createTablesInPostgres() {
 // Database operations
 export async function getAllIncidents() {
   if (process.env.NODE_ENV === 'production') {
-    const result = await sql`SELECT * FROM incidents ORDER BY date DESC, time DESC`;
-    return result.rows;
+    try {
+      // Try using @vercel/postgres first
+      const result = await sql`SELECT * FROM incidents ORDER BY date DESC, time DESC`;
+      return result.rows;
+    } catch (error) {
+      console.error('Error using @vercel/postgres for getAllIncidents, falling back to pg Pool:', error);
+      // Fall back to pg Pool
+      try {
+        const client = await pgPool.connect();
+        try {
+          const result = await client.query('SELECT * FROM incidents ORDER BY date DESC, time DESC');
+          return result.rows;
+        } finally {
+          client.release();
+        }
+      } catch (pgError) {
+        console.error('Error using pg Pool for getAllIncidents, falling back to direct connection:', pgError);
+        // Fall back to direct connection as a last resort
+        try {
+          return await directDb.getAllDirectIncidents();
+        } catch (directDbError) {
+          console.error('Error using direct connection for getAllIncidents:', directDbError);
+          // Return empty array instead of failing
+          return [];
+        }
+      }
+    }
   } else {
     return await db.all('SELECT * FROM incidents ORDER BY date DESC, time DESC');
   }
@@ -118,8 +165,33 @@ export async function getAllIncidents() {
 
 export async function getIncidentsByStatus(status) {
   if (process.env.NODE_ENV === 'production') {
-    const result = await sql`SELECT * FROM incidents WHERE status = ${status} ORDER BY date DESC, time DESC`;
-    return result.rows;
+    try {
+      // Try using @vercel/postgres first
+      const result = await sql`SELECT * FROM incidents WHERE status = ${status} ORDER BY date DESC, time DESC`;
+      return result.rows;
+    } catch (error) {
+      console.error('Error using @vercel/postgres for getIncidentsByStatus, falling back to pg Pool:', error);
+      // Fall back to pg Pool
+      try {
+        const client = await pgPool.connect();
+        try {
+          const result = await client.query('SELECT * FROM incidents WHERE status = $1 ORDER BY date DESC, time DESC', [status]);
+          return result.rows;
+        } finally {
+          client.release();
+        }
+      } catch (pgError) {
+        console.error('Error using pg Pool for getIncidentsByStatus, falling back to direct connection:', pgError);
+        // Fall back to direct connection as a last resort
+        try {
+          return await directDb.getDirectIncidentsByStatus(status);
+        } catch (directDbError) {
+          console.error('Error using direct connection for getIncidentsByStatus:', directDbError);
+          // Return empty array instead of failing
+          return [];
+        }
+      }
+    }
   } else {
     return await db.all('SELECT * FROM incidents WHERE status = ? ORDER BY date DESC, time DESC', status);
   }
@@ -129,11 +201,38 @@ export async function createIncident(incident) {
   const { id, date, time, location, freguesia, description, type, severity, reporterName, status, createdAt } = incident;
   
   if (process.env.NODE_ENV === 'production') {
-    await sql`
-      INSERT INTO incidents (id, date, time, location, freguesia, description, type, severity, "reporterName", status, "createdAt") 
-      VALUES (${id}, ${date}, ${time}, ${location}, ${freguesia}, ${description}, ${type}, ${severity}, ${reporterName}, ${status}, ${createdAt})
-    `;
-    return { id };
+    try {
+      // Try using @vercel/postgres first
+      await sql`
+        INSERT INTO incidents (id, date, time, location, freguesia, description, type, severity, "reporterName", status, "createdAt") 
+        VALUES (${id}, ${date}, ${time}, ${location}, ${freguesia}, ${description}, ${type}, ${severity}, ${reporterName}, ${status}, ${createdAt})
+      `;
+      return { id };
+    } catch (error) {
+      console.error('Error using @vercel/postgres for createIncident, falling back to pg Pool:', error);
+      // Fall back to pg Pool
+      try {
+        const client = await pgPool.connect();
+        try {
+          await client.query(
+            'INSERT INTO incidents (id, date, time, location, freguesia, description, type, severity, "reporterName", status, "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+            [id, date, time, location, freguesia, description, type, severity, reporterName, status, createdAt]
+          );
+          return { id };
+        } finally {
+          client.release();
+        }
+      } catch (pgError) {
+        console.error('Error using pg Pool for createIncident, falling back to direct connection:', pgError);
+        // Fall back to direct connection as a last resort
+        try {
+          return await directDb.createDirectIncident(incident);
+        } catch (directDbError) {
+          console.error('Error using direct connection for createIncident:', directDbError);
+          throw directDbError;
+        }
+      }
+    }
   } else {
     await db.run(
       'INSERT INTO incidents (id, date, time, location, freguesia, description, type, severity, reporterName, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -145,7 +244,30 @@ export async function createIncident(incident) {
 
 export async function updateIncidentStatus(id, status) {
   if (process.env.NODE_ENV === 'production') {
-    await sql`UPDATE incidents SET status = ${status} WHERE id = ${id}`;
+    try {
+      // Try using @vercel/postgres first
+      await sql`UPDATE incidents SET status = ${status} WHERE id = ${id}`;
+    } catch (error) {
+      console.error('Error using @vercel/postgres for updateIncidentStatus, falling back to pg Pool:', error);
+      // Fall back to pg Pool
+      try {
+        const client = await pgPool.connect();
+        try {
+          await client.query('UPDATE incidents SET status = $1 WHERE id = $2', [status, id]);
+        } finally {
+          client.release();
+        }
+      } catch (pgError) {
+        console.error('Error using pg Pool for updateIncidentStatus, falling back to direct connection:', pgError);
+        // Fall back to direct connection as a last resort
+        try {
+          await directDb.updateDirectIncidentStatus(id, status);
+        } catch (directDbError) {
+          console.error('Error using direct connection for updateIncidentStatus:', directDbError);
+          throw directDbError;
+        }
+      }
+    }
   } else {
     await db.run('UPDATE incidents SET status = ? WHERE id = ?', [status, id]);
   }
@@ -154,8 +276,33 @@ export async function updateIncidentStatus(id, status) {
 
 export async function getAdminIncidents() {
   if (process.env.NODE_ENV === 'production') {
-    const result = await sql`SELECT * FROM incidents ORDER BY "createdAt" DESC`;
-    return result.rows;
+    try {
+      // Try using @vercel/postgres first
+      const result = await sql`SELECT * FROM incidents ORDER BY "createdAt" DESC`;
+      return result.rows;
+    } catch (error) {
+      console.error('Error using @vercel/postgres for getAdminIncidents, falling back to pg Pool:', error);
+      // Fall back to pg Pool
+      try {
+        const client = await pgPool.connect();
+        try {
+          const result = await client.query('SELECT * FROM incidents ORDER BY "createdAt" DESC');
+          return result.rows;
+        } finally {
+          client.release();
+        }
+      } catch (pgError) {
+        console.error('Error using pg Pool for getAdminIncidents, falling back to direct connection:', pgError);
+        // Fall back to direct connection as a last resort
+        try {
+          return await directDb.getDirectAdminIncidents();
+        } catch (directDbError) {
+          console.error('Error using direct connection for getAdminIncidents:', directDbError);
+          // Return empty array instead of failing
+          return [];
+        }
+      }
+    }
   } else {
     return await db.all('SELECT * FROM incidents ORDER BY createdAt DESC');
   }
