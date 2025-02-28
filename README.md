@@ -121,10 +121,12 @@ A aplicação está configurada para deploy na Vercel com suporte ao domínio pe
    
    d. Na seção "Build and Output Settings", mantenha as configurações padrão:
    
-   - Build Command: `npm run build`
+   - Build Command: `npm run build` (já configurado para executar `prisma generate` antes do build)
    - Output Directory: `.next`
    
    e. Clique em "Deploy"
+
+   > **Nota**: O script de build foi configurado para executar `prisma generate` automaticamente antes do build do Next.js, garantindo que o Prisma Client seja gerado corretamente durante o processo de deployment na Vercel.
 
 3. **Configuração do Domínio Personalizado**
 
