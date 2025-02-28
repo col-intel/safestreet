@@ -11,41 +11,56 @@ function isPreparedStatementError(error) {
          error.message.includes('ERROR: prepared statement');
 }
 
-try {
-  // First, try a normal push without any reset flags
-  console.log('Attempting standard schema push...');
-  execSync('npx prisma db push', { 
-    stdio: 'inherit',
-    env: { ...process.env }
-  });
+// Check if we're in a Vercel environment
+const isVercel = process.env.VERCEL === '1';
+
+// If we're in Vercel and have seen this error before, skip directly to SQL
+if (isVercel) {
+  console.log('Detected Vercel environment, checking for known issues...');
   
-  console.log('Schema push completed successfully!');
-  process.exit(0);
-} catch (error) {
-  console.error('Standard schema push failed:', error.message);
-  
-  // If the error is related to prepared statements, we can skip to direct SQL
-  if (isPreparedStatementError(error)) {
-    console.log('Detected prepared statement error, skipping to direct SQL approach...');
-    createTableDirectly();
-    return;
-  }
-  
-  // If the standard push fails with other errors, try with --accept-data-loss but not --force-reset
-  console.log('Attempting schema push with --accept-data-loss...');
+  // In Vercel, we've consistently seen the s13 prepared statement error
+  // So we'll skip directly to the SQL approach to save time and reduce noise
+  console.log('Skipping standard Prisma push attempts in Vercel environment');
+  console.log('Using direct SQL approach for table creation...');
+  createTableDirectly();
+} else {
+  // In non-Vercel environments, try the standard approach first
   try {
-    execSync('npx prisma db push --accept-data-loss', { 
+    // First, try a normal push without any reset flags
+    console.log('Attempting standard schema push...');
+    execSync('npx prisma db push', { 
       stdio: 'inherit',
       env: { ...process.env }
     });
     
-    console.log('Schema push with --accept-data-loss completed successfully!');
+    console.log('Schema push completed successfully!');
     process.exit(0);
-  } catch (secondError) {
-    console.error('Schema push with --accept-data-loss failed:', secondError.message);
-    createTableDirectly();
+  } catch (error) {
+    console.error('Standard schema push failed:', error.message);
+    
+    // If the error is related to prepared statements, we can skip to direct SQL
+    if (isPreparedStatementError(error)) {
+      console.log('Detected prepared statement error, skipping to direct SQL approach...');
+      createTableDirectly();
+      return;
+    }
+    
+    // If the standard push fails with other errors, try with --accept-data-loss but not --force-reset
+    console.log('Attempting schema push with --accept-data-loss...');
+    try {
+      execSync('npx prisma db push --accept-data-loss', { 
+        stdio: 'inherit',
+        env: { ...process.env }
+      });
+      
+      console.log('Schema push with --accept-data-loss completed successfully!');
+      process.exit(0);
+    } catch (secondError) {
+      console.error('Schema push with --accept-data-loss failed:', secondError.message);
+      createTableDirectly();
+    }
   }
-} 
+}
 
 // Function to create the table directly with SQL
 function createTableDirectly() {
